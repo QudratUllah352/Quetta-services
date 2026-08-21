@@ -87,7 +87,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
       {/* Hero Banner */}
-      <section className="bg-gradient-to-b from-blue-900 via-indigo-900 to-slate-900 text-white py-16 px-4 sm:px-6 lg:px-8">
+      <section className="bg-linear-to-b from-blue-900 via-indigo-900 to-slate-900 text-white py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto text-center">
           <span className="inline-block py-1 px-3 rounded-full bg-blue-500/20 text-blue-300 text-xs font-semibold tracking-wide uppercase mb-4 border border-blue-400/30">
             Quetta's Verified Service Network

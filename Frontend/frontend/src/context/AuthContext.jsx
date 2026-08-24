@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { jwtDecode } from "jwt-decode";
 import axios from "../api/axios";
 
 const AuthContext = createContext(null);
@@ -6,17 +7,36 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(() => localStorage.getItem("token") || null);
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem("user");
-    return saved ? JSON.parse(saved) : null;
+    const savedToken = localStorage.getItem("token");
+    if (!savedToken) return null;
+    try {
+      const decoded = jwtDecode(savedToken);
+      const savedUser = localStorage.getItem("user");
+      return savedUser ? JSON.parse(savedUser) : decoded;
+    } catch {
+      return null;
+    }
   });
 
   const login = async (email, password) => {
-    // FastAPI OAuth2 password request form or JSON endpoint
     const res = await axios.post("/auth/login", { email, password });
     const data = res.data;
-
     const accessToken = data.access_token;
-    const userData = data.user || { email, role: data.role || "customer" };
+
+    // Decode role directly from JWT payload
+    let decodedUser = {};
+    try {
+      decodedUser = jwtDecode(accessToken);
+    } catch (e) {
+      console.error("Failed to decode token", e);
+    }
+
+    const userData = {
+      id: data.user?.id || decodedUser.id || decodedUser.sub,
+      email: data.user?.email || decodedUser.email || email,
+      name: data.user?.name || data.user?.full_name || decodedUser.name || email.split("@")[0],
+      role: (data.user?.role || data.role || decodedUser.role || "customer").toLowerCase(),
+    };
 
     localStorage.setItem("token", accessToken);
     localStorage.setItem("user", JSON.stringify(userData));

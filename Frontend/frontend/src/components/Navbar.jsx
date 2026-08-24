@@ -19,11 +19,15 @@ export default function Navbar() {
         : "text-slate-600 hover:text-slate-900"
     }`;
 
+  const isCustomer = token && (!user?.role || user?.role === "customer");
+  const isProvider = token && user?.role === "provider";
+  const isAdmin = token && user?.role === "admin";
+
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Brand Logo */}
+          {/* Logo Badge */}
           <Link to="/" className="flex items-center gap-2.5 group">
             <div className="w-10 h-10 rounded-xl bg-linear-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-lg shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform duration-200">
               Q
@@ -38,44 +42,42 @@ export default function Navbar() {
             </div>
           </Link>
 
-          {/* Desktop Navigation Links */}
+          {/* Desktop Nav Links */}
           <nav className="hidden md:flex items-center gap-8">
             <NavLink to="/" className={navLinkStyle}>
               Home
             </NavLink>
 
-            {/* Role-Specific Links */}
-            {token && user?.role === "customer" && (
+            {isCustomer && (
               <NavLink to="/dashboard" className={navLinkStyle}>
-                My Bookings
+                Customer Dashboard
               </NavLink>
             )}
 
-            {token && user?.role === "provider" && (
+            {isProvider && (
               <NavLink to="/provider" className={navLinkStyle}>
                 Provider Portal
               </NavLink>
             )}
 
-            {token && user?.role === "admin" && (
+            {isAdmin && (
               <NavLink to="/admin" className={navLinkStyle}>
                 Admin Panel
               </NavLink>
             )}
           </nav>
 
-          {/* Right Action Area */}
+          {/* Auth Area */}
           <div className="hidden md:flex items-center gap-3">
             {token ? (
               <div className="flex items-center gap-3">
-                {/* User Profile Pill */}
                 <div className="flex items-center gap-2.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-full">
                   <div className="w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center uppercase">
-                    {user?.name ? user.name.charAt(0) : "U"}
+                    {user?.name || user?.full_name ? (user.name || user.full_name).charAt(0) : "U"}
                   </div>
                   <div className="text-left pr-1">
                     <p className="text-xs font-semibold text-slate-800 leading-none">
-                      {user?.name || "My Account"}
+                      {user?.name || user?.full_name || "My Account"}
                     </p>
                     <span className="text-[10px] text-slate-400 capitalize">
                       {user?.role || "Member"}
@@ -108,32 +110,17 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile Menu Toggle Button */}
+          {/* Mobile Menu Button */}
           <div className="flex md:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 text-slate-600 hover:text-slate-900 focus:outline-none"
             >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 {mobileMenuOpen ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 )}
               </svg>
             </button>
@@ -141,7 +128,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Dropdown Menu */}
+      {/* Mobile Dropdown */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-white border-b border-slate-200 px-4 pt-2 pb-4 space-y-2">
           <Link
@@ -152,31 +139,31 @@ export default function Navbar() {
             Home
           </Link>
 
-          {token && user?.role === "customer" && (
+          {isCustomer && (
             <Link
               to="/dashboard"
               onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"
+              className="block px-3 py-2 rounded-lg text-sm text-blue-600 hover:bg-blue-50 font-semibold"
             >
-              My Bookings
+              Customer Dashboard
             </Link>
           )}
 
-          {token && user?.role === "provider" && (
+          {isProvider && (
             <Link
               to="/provider"
               onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"
+              className="block px-3 py-2 rounded-lg text-sm text-blue-600 hover:bg-blue-50 font-semibold"
             >
               Provider Portal
             </Link>
           )}
 
-          {token && user?.role === "admin" && (
+          {isAdmin && (
             <Link
               to="/admin"
               onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"
+              className="block px-3 py-2 rounded-lg text-sm text-blue-600 hover:bg-blue-50 font-semibold"
             >
               Admin Panel
             </Link>
@@ -191,7 +178,7 @@ export default function Navbar() {
                 }}
                 className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50"
               >
-                Log Out ({user?.name || "Account"})
+                Log Out
               </button>
             ) : (
               <div className="flex flex-col gap-2">

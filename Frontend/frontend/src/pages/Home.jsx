@@ -155,7 +155,7 @@ export default function Home() {
             Book top-rated electricians, tutors, plumbers, tailors, and mechanics across Quetta with transparent pricing and real reviews.
           </p>
 
-          {/* Interactive Filter Box */}
+          {/* Interactive Filter Box
           <div className="mt-8 bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 shadow-2xl max-w-4xl mx-auto">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-slate-900">
               <input
@@ -199,7 +199,7 @@ export default function Home() {
                 <option value="5">★ 5.0 only</option>
               </select>
             </div>
-          </div>
+          </div> */}
         </div>
       </section>
 

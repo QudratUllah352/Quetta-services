@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import axios from "../api/axios";
 
 // Default category icons and fallback image assets
@@ -24,6 +25,9 @@ const CATEGORY_IMAGES = {
 };
 
 export default function Home() {
+  const { user, token, logout } = useAuth();
+  const navigate = useNavigate();
+
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -46,6 +50,11 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
   };
 
   // Live filter pipeline
@@ -86,6 +95,64 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
+      {/* Top Welcome & Dashboard Bar on Home (Visible when Logged In) */}
+      {token && (
+        <div className="bg-white border-b border-slate-200 py-3 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center">
+                {user?.name || user?.full_name ? (user.name || user.full_name).charAt(0).toUpperCase() : "U"}
+              </div>
+              <div>
+                <p className="text-xs text-slate-500">Signed in as</p>
+                <p className="text-sm font-bold text-slate-800">
+                  {user?.name || user?.full_name || "Valued User"}{" "}
+                  <span className="text-xs font-normal text-slate-400 capitalize">
+                    ({user?.role || "Customer"})
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {(!user?.role || user?.role === "customer") && (
+                <Link
+                  to="/dashboard"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all"
+                >
+                  Go to Customer Dashboard →
+                </Link>
+              )}
+
+              {user?.role === "provider" && (
+                <Link
+                  to="/provider"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all"
+                >
+                  Provider Portal →
+                </Link>
+              )}
+
+              {user?.role === "admin" && (
+                <Link
+                  to="/admin"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all"
+                >
+                  Admin Panel →
+                </Link>
+              )}
+
+              <button
+                onClick={handleLogout}
+                className="px-3.5 py-2 bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-red-600 text-xs font-semibold rounded-xl border border-slate-200 hover:border-red-100 transition-colors"
+              >
+                Log Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hero Banner */}
       <section className="bg-linear-to-b from-blue-900 via-indigo-900 to-slate-900 text-white py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto text-center">
@@ -122,6 +189,8 @@ export default function Home() {
                 <option value="Brewery Road">Brewery Road</option>
                 <option value="Nawan Killi">Nawan Killi</option>
                 <option value="Airport Road">Airport Road</option>
+                <option value="Shahbaz Town">Shahbaz Town</option>
+                <option value="Satellite Town">Satellite Town</option>
               </select>
 
               <input

@@ -21,7 +21,7 @@ export default function Register() {
     password: "",
     phone: "",
     location: "Jinnah Town",
-    role: "customer", // Default account type
+    role: "customer",
   });
 
   const [error, setError] = useState("");
@@ -37,16 +37,31 @@ export default function Register() {
     setError("");
     setLoading(true);
 
+    // Payload formatted to satisfy backend schema naming
+    const payload = {
+      name: formData.full_name,
+      full_name: formData.full_name,
+      email: formData.email,
+      password: formData.password,
+      phone: formData.phone,
+      phone_number: formData.phone,
+      location: formData.location,
+      role: formData.role,
+    };
+
     try {
-      // Backend schema payload alignment
-      await axios.post("/auth/register", formData);
+      await axios.post("/auth/register", payload);
       navigate("/login");
     } catch (err) {
-      setError(
-        getErrorMessage
-          ? getErrorMessage(err)
-          : err.response?.data?.detail || "Registration failed. Try again."
-      );
+      const detail = err.response?.data?.detail;
+      if (Array.isArray(detail)) {
+        // Formats FastAPI 422 validation error arrays cleanly
+        setError(`${detail[0].loc.slice(-1)}: ${detail[0].msg}`);
+      } else if (getErrorMessage) {
+        setError(getErrorMessage(err));
+      } else {
+        setError(detail || "Registration failed. Please check your inputs.");
+      }
     } finally {
       setLoading(false);
     }
@@ -57,7 +72,7 @@ export default function Register() {
       <div className="w-full max-w-lg bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-100 p-8 sm:p-10 transition-all">
         {/* Brand Header */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-linear-to-tr from-blue-600 to-indigo-600 text-white font-black text-xl shadow-lg shadow-blue-500/25 mb-4">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-black text-xl shadow-lg shadow-blue-500/25 mb-4">
             Q
           </div>
           <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">

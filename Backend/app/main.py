@@ -6,12 +6,21 @@ from app.routers import auth, services, bookings, reviews, admin, reports
 
 app = FastAPI(title="Quetta Services API")
 
-# CORS: only allow the configured frontend origin(s), not "*".
-# In production, FRONTEND_URL should be the deployed Static Web Apps domain,
-# not localhost (Section 27: "Production CORS allowed origins").
+# List all valid frontend origins (both localhost and 127.0.0.1 on Vite/React ports)
+allowed_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+# Include the production FRONTEND_URL from settings if configured
+if getattr(settings, "FRONTEND_URL", None) and settings.FRONTEND_URL not in allowed_origins:
+    allowed_origins.append(settings.FRONTEND_URL)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.FRONTEND_URL],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -12,88 +12,131 @@ export default function Navbar() {
     navigate("/login");
   };
 
-  const navLinkStyle = ({ isActive }) =>
-    `text-sm font-medium transition-colors duration-150 ${
-      isActive
-        ? "text-blue-600 font-bold"
-        : "text-slate-600 hover:text-slate-900"
-    }`;
-
-  // Strict role detection to prevent defaulting to customer when role is missing/different
   const userRole = (user?.role || "").toLowerCase();
   const isProvider = token && userRole === "provider";
   const isCustomer = token && userRole === "customer";
   const isAdmin = token && userRole === "admin";
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
+    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/70 shadow-sm transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo Badge */}
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-10 h-10 rounded-xl bg-linear-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-lg shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform duration-200">
-              Q
+        <div className="flex items-center justify-between h-20">
+          
+          {/* Animated Brand Logo */}
+          <Link to="/" className="flex items-center gap-3 group relative">
+            <div className="relative w-11 h-11 rounded-2xl bg-linear-to-tr from-blue-600 via-indigo-600 to-cyan-400 p-0.5 shadow-lg shadow-blue-500/25 group-hover:shadow-blue-500/50 group-hover:scale-105 transition-all duration-300 ease-out">
+              <div className="w-full h-full bg-slate-900 rounded-[14px] flex items-center justify-center">
+                <span className="text-white font-black text-xl tracking-wider group-hover:rotate-6 transition-transform duration-300">
+                  Q
+                </span>
+              </div>
             </div>
-            <div>
-              <span className="text-lg font-bold text-slate-900 tracking-tight block leading-tight">
-                Quetta<span className="text-blue-600">Services</span>
+            
+            <div className="flex flex-col">
+              <span className="text-xl font-black text-slate-900 tracking-tight leading-none group-hover:text-blue-600 transition-colors duration-200">
+                Quetta<span className="text-transparent bg-clip-text bg-linear-to-r from-blue-600 to-indigo-600">Services</span>
               </span>
-              <span className="text-[10px] uppercase font-semibold tracking-wider text-slate-400 block -mt-0.5">
+              <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 mt-1 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                 Marketplace
               </span>
             </div>
           </Link>
 
-          {/* Desktop Nav Links */}
-          <nav className="hidden md:flex items-center gap-8">
-            <NavLink to="/" className={navLinkStyle}>
+          {/* Floating Pill Main Navigation */}
+          <nav className="hidden md:flex items-center bg-slate-100/80 p-1.5 rounded-full border border-slate-200/80 shadow-inner backdrop-blur-md">
+            
+            {/* Home Link */}
+            <NavLink
+              to="/"
+              className={({ isActive }) =>
+                `relative px-5 py-2 rounded-full text-xs font-bold transition-all duration-300 ${
+                  isActive
+                    ? "bg-white text-blue-600 shadow-md shadow-slate-900/5 scale-100"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                }`
+              }
+            >
               Home
             </NavLink>
 
+            {/* Customer Dashboard Link */}
             {isCustomer && (
-              <NavLink to="/dashboard" className={navLinkStyle}>
+              <NavLink
+                to="/dashboard"
+                className={({ isActive }) =>
+                  `relative px-5 py-2 rounded-full text-xs font-bold transition-all duration-300 ${
+                    isActive
+                      ? "bg-white text-blue-600 shadow-md shadow-slate-900/5 scale-100"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                  }`
+                }
+              >
                 Customer Dashboard
               </NavLink>
             )}
 
+            {/* Provider Portal Link */}
             {isProvider && (
-              <NavLink to="/provider" className={navLinkStyle}>
-                Provider Portal
+              <NavLink
+                to="/provider"
+                className={({ isActive }) =>
+                  `relative px-5 py-2 rounded-full text-xs font-bold transition-all duration-300 ${
+                    isActive
+                      ? "bg-white text-emerald-600 shadow-md shadow-slate-900/5 scale-100"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                  }`
+                }
+              >
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  Provider Portal
+                </span>
               </NavLink>
             )}
 
+            {/* Admin Panel Link */}
             {isAdmin && (
-              <NavLink to="/admin" className={navLinkStyle}>
+              <NavLink
+                to="/admin"
+                className={({ isActive }) =>
+                  `relative px-5 py-2 rounded-full text-xs font-bold transition-all duration-300 ${
+                    isActive
+                      ? "bg-white text-purple-600 shadow-md shadow-slate-900/5 scale-100"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                  }`
+                }
+              >
                 Admin Panel
               </NavLink>
             )}
           </nav>
 
-          {/* Auth Area */}
+          {/* Right Action & User Profile Section */}
           <div className="hidden md:flex items-center gap-3">
             {token ? (
-              <div className="flex items-center gap-3">
-                {/* User Pill Badge */}
-                <div className="flex items-center gap-2.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-full">
+              <div className="flex items-center gap-3 bg-slate-50 border border-slate-200/80 p-1.5 pr-3 rounded-2xl shadow-xs">
+                {/* Profile Pill */}
+                <div className="flex items-center gap-2.5">
                   <div
-                    className={`w-7 h-7 rounded-full text-white text-xs font-bold flex items-center justify-center uppercase ${
+                    className={`w-9 h-9 rounded-xl text-white text-xs font-black flex items-center justify-center uppercase shadow-sm transition-transform duration-200 hover:scale-105 ${
                       isProvider
-                        ? "bg-emerald-600"
+                        ? "bg-linear-to-tr from-emerald-600 to-teal-500"
                         : isAdmin
-                        ? "bg-purple-600"
-                        : "bg-blue-600"
+                        ? "bg-linear-to-tr from-purple-600 to-pink-500"
+                        : "bg-linear-to-tr from-blue-600 to-indigo-500"
                     }`}
                   >
                     {user?.name || user?.full_name
                       ? (user.name || user.full_name).charAt(0)
                       : "U"}
                   </div>
-                  <div className="text-left pr-1">
-                    <p className="text-xs font-semibold text-slate-800 leading-none">
+                  <div className="text-left">
+                    <p className="text-xs font-bold text-slate-800 leading-tight">
                       {user?.name || user?.full_name || "Account"}
                     </p>
                     <span
-                      className={`text-[10px] font-bold uppercase tracking-wider block mt-0.5 ${
+                      className={`text-[9px] font-extrabold uppercase tracking-wider block ${
                         isProvider
                           ? "text-emerald-600"
                           : isAdmin
@@ -101,41 +144,46 @@ export default function Navbar() {
                           : "text-blue-600"
                       }`}
                     >
-                      {userRole || "User"}
+                      {userRole || "Customer"}
                     </span>
                   </div>
                 </div>
 
+                <div className="w-px h-6 bg-slate-200 mx-1"></div>
+
                 <button
                   onClick={handleLogout}
-                  className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
+                  className="px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all duration-150"
                 >
                   Log Out
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <Link
                   to="/login"
-                  className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-slate-900 rounded-xl hover:bg-slate-100 transition-colors"
+                  className="px-5 py-2.5 text-xs font-bold text-slate-700 hover:text-slate-900 rounded-xl hover:bg-slate-100 transition-all duration-150"
                 >
                   Log In
                 </Link>
                 <Link
                   to="/register"
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm shadow-blue-500/20 transition-all hover:shadow-md"
+                  className="relative group px-5 py-2.5 rounded-xl overflow-hidden shadow-md shadow-blue-500/20 hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all duration-200"
                 >
-                  Sign Up
+                  <div className="absolute inset-0 bg-linear-to-r from-blue-600 to-indigo-600 transition-all group-hover:scale-105"></div>
+                  <span className="relative text-xs font-bold text-white tracking-wide">
+                    Get Started →
+                  </span>
                 </Link>
               </div>
             )}
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile Hamburger Button */}
           <div className="flex md:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-slate-600 hover:text-slate-900 focus:outline-none"
+              className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 {mobileMenuOpen ? (
@@ -149,13 +197,13 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Dropdown */}
+      {/* Mobile Animated Dropdown Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-b border-slate-200 px-4 pt-2 pb-4 space-y-2">
+        <div className="md:hidden bg-white/95 backdrop-blur-xl border-b border-slate-200 px-6 pt-3 pb-6 space-y-3 shadow-xl animate-in slide-in-from-top-2 duration-200">
           <Link
             to="/"
             onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"
+            className="block px-4 py-2.5 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-100 transition-colors"
           >
             Home
           </Link>
@@ -164,7 +212,7 @@ export default function Navbar() {
             <Link
               to="/dashboard"
               onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg text-sm text-blue-600 hover:bg-blue-50 font-semibold"
+              className="block px-4 py-2.5 rounded-xl text-sm font-bold text-blue-600 hover:bg-blue-50 transition-colors"
             >
               Customer Dashboard
             </Link>
@@ -174,7 +222,7 @@ export default function Navbar() {
             <Link
               to="/provider"
               onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg text-sm text-emerald-600 hover:bg-emerald-50 font-semibold"
+              className="block px-4 py-2.5 rounded-xl text-sm font-bold text-emerald-600 hover:bg-emerald-50 transition-colors"
             >
               Provider Portal
             </Link>
@@ -184,7 +232,7 @@ export default function Navbar() {
             <Link
               to="/admin"
               onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg text-sm text-purple-600 hover:bg-purple-50 font-semibold"
+              className="block px-4 py-2.5 rounded-xl text-sm font-bold text-purple-600 hover:bg-purple-50 transition-colors"
             >
               Admin Panel
             </Link>
@@ -197,23 +245,23 @@ export default function Navbar() {
                   setMobileMenuOpen(false);
                   handleLogout();
                 }}
-                className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50"
+                className="w-full text-left px-4 py-2.5 rounded-xl text-sm font-bold text-rose-600 hover:bg-rose-50 transition-colors"
               >
                 Log Out ({user?.name || user?.full_name || "User"})
               </button>
             ) : (
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 pt-1">
                 <Link
                   to="/login"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="w-full text-center py-2 text-sm font-medium text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50"
+                  className="w-full text-center py-2.5 text-xs font-bold text-slate-700 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
                 >
                   Log In
                 </Link>
                 <Link
                   to="/register"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="w-full text-center py-2 text-sm font-medium text-white bg-blue-600 rounded-lg shadow-xs"
+                  className="w-full text-center py-2.5 text-xs font-bold text-white bg-linear-to-r from-blue-600 to-indigo-600 rounded-xl shadow-md"
                 >
                   Sign Up
                 </Link>

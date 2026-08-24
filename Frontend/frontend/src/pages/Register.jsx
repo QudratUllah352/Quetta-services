@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "../api/axios";
-import { useAuth } from "../context/AuthContext";
 import { getErrorMessage } from "../api/errors";
 
 const QUETTA_LOCATIONS = [
@@ -28,7 +27,6 @@ export default function Register() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -39,6 +37,7 @@ export default function Register() {
     setError("");
     setLoading(true);
 
+    // Payload formatted to satisfy backend schema naming
     const payload = {
       name: formData.full_name,
       full_name: formData.full_name,
@@ -51,23 +50,12 @@ export default function Register() {
     };
 
     try {
-      // 1. Register the user
       await axios.post("/auth/register", payload);
-
-      // 2. Automatically log them in right after registration
-      const loggedInUser = await login(formData.email, formData.password);
-
-      // 3. Route based on their role
-      if (loggedInUser?.role === "provider" || formData.role === "provider") {
-        navigate("/provider");
-      } else if (loggedInUser?.role === "admin" || formData.role === "admin") {
-        navigate("/admin");
-      } else {
-        navigate("/");
-      }
+      navigate("/login");
     } catch (err) {
       const detail = err.response?.data?.detail;
       if (Array.isArray(detail)) {
+        // Formats FastAPI 422 validation error arrays cleanly
         setError(`${detail[0].loc.slice(-1)}: ${detail[0].msg}`);
       } else if (getErrorMessage) {
         setError(getErrorMessage(err));
@@ -84,7 +72,7 @@ export default function Register() {
       <div className="w-full max-w-lg bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-100 p-8 sm:p-10 transition-all">
         {/* Brand Header */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-black text-xl shadow-lg shadow-blue-500/25 mb-4">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-linear-to-tr from-blue-600 to-indigo-600 text-white font-black text-xl shadow-lg shadow-blue-500/25 mb-4">
             Q
           </div>
           <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">

@@ -2,18 +2,17 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "../api/axios";
 
-// Default icons mapped by category name keywords
-const ICONS_MAP = {
-  electric: "⚡",
-  plumb: "🔧",
-  tutor: "📚",
-  home: "🧹",
-  computer: "💻",
-  design: "🎨",
-  tailor: "✂️",
-  mechanic: "🚗",
-  default: "✨",
-};
+const CATEGORIES = [
+  { id: "all", name: "All Categories", icon: "✨" },
+  { id: "electrician", name: "Electricians", icon: "⚡" },
+  { id: "plumber", name: "Plumbers", icon: "🔧" },
+  { id: "tutor", name: "Tutors", icon: "📚" },
+  { id: "home-services", name: "Home Services", icon: "🧹" },
+  { id: "computer", name: "Computer Services", icon: "💻" },
+  { id: "graphic-design", name: "Graphic Designers", icon: "🎨" },
+  { id: "tailor", name: "Tailors", icon: "✂️" },
+  { id: "mechanic", name: "Mechanics", icon: "🚗" },
+];
 
 const CATEGORY_IMAGES = {
   electric: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600&auto=format&fit=crop&q=60",
@@ -27,7 +26,6 @@ const CATEGORY_IMAGES = {
 
 export default function Home() {
   const [services, setServices] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,83 +34,64 @@ export default function Home() {
   const [minRating, setMinRating] = useState("");
 
   useEffect(() => {
-    fetchInitialData();
+    fetchServices();
   }, []);
 
-  const fetchInitialData = async () => {
+  const fetchServices = async () => {
     try {
       setLoading(true);
-      const [servicesRes, categoriesRes] = await Promise.allSettled([
-        axios.get("/services"),
-        axios.get("/categories"),
-      ]);
-
-      if (servicesRes.status === "fulfilled") {
-        setServices(servicesRes.value.data || []);
-      }
-      if (categoriesRes.status === "fulfilled") {
-        setCategories(categoriesRes.value.data || []);
-      }
+      const res = await axios.get("/services");
+      setServices(res.data || []);
     } catch (err) {
-      console.error("Error loading initial marketplace data:", err);
+      console.error("Failed to load services:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Helper to resolve icon
-  const getCategoryIcon = (catName) => {
-    const lower = (catName || "").toLowerCase();
-    for (const [key, icon] of Object.entries(ICONS_MAP)) {
-      if (lower.includes(key)) return icon;
-    }
-    return ICONS_MAP.default;
-  };
-
-  // Helper to resolve image
-  const getServiceImage = (service) => {
-    const text = `${service.title || ""} ${service.category?.name || service.category || ""} ${service.description || ""}`.toLowerCase();
-    for (const [key, url] of Object.entries(CATEGORY_IMAGES)) {
-      if (text.includes(key)) return url;
-    }
-    return CATEGORY_IMAGES.default;
-  };
-
-  // Robust Filter matching both ID, Object, and string representations
+  // Live filter matching against title, description, location, price, and rating
   const filteredServices = services.filter((service) => {
     const sTitle = (service.title || "").toLowerCase();
     const sDesc = (service.description || "").toLowerCase();
     const sLoc = (service.location || "").toLowerCase();
+    const sCat = (service.category?.name || service.category || "").toLowerCase();
 
-    // 1. Search Query
+    // 1. Text Search Filter
     const matchesSearch =
       !searchQuery ||
       sTitle.includes(searchQuery.toLowerCase()) ||
       sDesc.includes(searchQuery.toLowerCase());
 
-    // 2. Category Match: checks ID, nested category object name, or category string
+    // 2. Category Filter (Matches ID, category name, title keywords, or descriptions)
     let matchesCategory = selectedCategory === "all";
     if (!matchesCategory) {
-      const catIdMatch =
-        String(service.category_id) === String(selectedCategory) ||
-        String(service.category?.id) === String(selectedCategory);
-
-      const catNameMatch =
-        (service.category?.name || service.category || "")
-          .toLowerCase()
-          .includes(String(selectedCategory).toLowerCase());
-
-      matchesCategory = catIdMatch || catNameMatch;
+      if (selectedCategory === "electrician") {
+        matchesCategory = sCat.includes("elect") || sTitle.includes("wiring") || sTitle.includes("electric") || sTitle.includes("generator") || sTitle.includes("fan") || sTitle.includes("light");
+      } else if (selectedCategory === "plumber") {
+        matchesCategory = sCat.includes("plumb") || sTitle.includes("plumb") || sTitle.includes("pipe") || sTitle.includes("tank") || sTitle.includes("fitting") || sTitle.includes("leak") || sTitle.includes("bathroom");
+      } else if (selectedCategory === "tutor") {
+        matchesCategory = sCat.includes("tutor") || sCat.includes("tuition") || sTitle.includes("tutoring") || sTitle.includes("tuition") || sTitle.includes("math") || sTitle.includes("english") || sTitle.includes("physics") || sTitle.includes("chemistry") || sTitle.includes("quran") || sTitle.includes("classes");
+      } else if (selectedCategory === "computer") {
+        matchesCategory = sCat.includes("computer") || sTitle.includes("computer") || sTitle.includes("pc") || sTitle.includes("laptop") || sTitle.includes("windows") || sTitle.includes("software");
+      } else if (selectedCategory === "graphic-design") {
+        matchesCategory = sCat.includes("graphic") || sCat.includes("design") || sTitle.includes("design") || sTitle.includes("logo") || sTitle.includes("photoshop");
+      } else if (selectedCategory === "tailor") {
+        matchesCategory = sCat.includes("tailor") || sTitle.includes("tailor") || sTitle.includes("suit") || sTitle.includes("stitch") || sTitle.includes("cloth");
+      } else if (selectedCategory === "mechanic") {
+        matchesCategory = sCat.includes("mechanic") || sTitle.includes("mechanic") || sTitle.includes("car") || sTitle.includes("engine") || sTitle.includes("auto") || sTitle.includes("bike");
+      } else if (selectedCategory === "home-services") {
+        matchesCategory = sCat.includes("home") || sTitle.includes("home") || sTitle.includes("clean") || sTitle.includes("repair");
+      }
     }
 
-    // 3. Location Match
+    // 3. Location Filter
     const matchesLocation =
       !selectedLocation || sLoc.includes(selectedLocation.toLowerCase());
 
-    // 4. Price Match
+    // 4. Price Filter
     const matchesPrice = !priceMax || Number(service.price) <= Number(priceMax);
 
-    // 5. Rating Match
+    // 5. Rating Filter
     const matchesRating =
       !minRating || Number(service.rating || 0) >= Number(minRating);
 
@@ -125,20 +104,13 @@ export default function Home() {
     );
   });
 
-  // Fallback categories if database has no categories endpoint populated yet
-  const displayCategories =
-    categories.length > 0
-      ? categories
-      : [
-          { id: "Electrician", name: "Electricians" },
-          { id: "Plumber", name: "Plumbers" },
-          { id: "Tutor", name: "Tutors" },
-          { id: "Home Services", name: "Home Services" },
-          { id: "Computer Services", name: "Computer Services" },
-          { id: "Graphic Designer", name: "Graphic Designers" },
-          { id: "Tailor", name: "Tailors" },
-          { id: "Mechanic", name: "Mechanics" },
-        ];
+  const getServiceImage = (service) => {
+    const text = `${service.title || ""} ${service.description || ""}`.toLowerCase();
+    for (const [key, url] of Object.entries(CATEGORY_IMAGES)) {
+      if (text.includes(key)) return url;
+    }
+    return CATEGORY_IMAGES.default;
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
@@ -155,7 +127,7 @@ export default function Home() {
             Book top-rated electricians, tutors, plumbers, tailors, and mechanics across Quetta with transparent pricing and real reviews.
           </p>
 
-          {/* Interactive Filter Box
+          {/* Search Box */}
           <div className="mt-8 bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 shadow-2xl max-w-4xl mx-auto">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-slate-900">
               <input
@@ -199,41 +171,26 @@ export default function Home() {
                 <option value="5">★ 5.0 only</option>
               </select>
             </div>
-          </div> */}
+          </div>
         </div>
       </section>
 
       {/* Category Pills Slider */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6">
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-3 overflow-x-auto flex gap-2">
-          {/* All Categories Button */}
-          <button
-            onClick={() => setSelectedCategory("all")}
-            className={`flex items-center gap-2 whitespace-nowrap px-4 py-2 rounded-xl text-sm font-medium transition-all duration-150 ${
-              selectedCategory === "all"
-                ? "bg-blue-600 text-white shadow-md shadow-blue-500/30"
-                : "bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/60"
-            }`}
-          >
-            <span>✨</span>
-            <span>All Categories</span>
-          </button>
-
-          {/* Dynamic Categories from DB */}
-          {displayCategories.map((cat) => {
-            const catKey = cat.id || cat.name;
-            const isActive = String(selectedCategory) === String(catKey);
+          {CATEGORIES.map((cat) => {
+            const isActive = selectedCategory === cat.id;
             return (
               <button
-                key={catKey}
-                onClick={() => setSelectedCategory(catKey)}
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
                 className={`flex items-center gap-2 whitespace-nowrap px-4 py-2 rounded-xl text-sm font-medium transition-all duration-150 ${
                   isActive
                     ? "bg-blue-600 text-white shadow-md shadow-blue-500/30"
                     : "bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/60"
                 }`}
               >
-                <span>{getCategoryIcon(cat.name)}</span>
+                <span>{cat.icon}</span>
                 <span>{cat.name}</span>
               </button>
             );
@@ -245,7 +202,9 @@ export default function Home() {
       <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h2 className="text-xl font-bold text-slate-800">Available Services</h2>
+            <h2 className="text-xl font-bold text-slate-800">
+              {selectedCategory === "all" ? "Available Services" : `${CATEGORIES.find((c) => c.id === selectedCategory)?.name || "Services"}`}
+            </h2>
             <p className="text-sm text-slate-500">
               Showing {filteredServices.length} verified listings in Quetta
             </p>
@@ -278,7 +237,7 @@ export default function Home() {
             <span className="text-4xl">🔍</span>
             <h3 className="mt-4 text-base font-semibold text-slate-800">No matching services found</h3>
             <p className="mt-1 text-sm text-slate-500">
-              Try clicking "All Categories" or resetting your filters.
+              Try clicking "All Categories" or resetting your search filters.
             </p>
           </div>
         ) : (

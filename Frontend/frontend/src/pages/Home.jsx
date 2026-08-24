@@ -3,15 +3,85 @@ import { Link } from "react-router-dom";
 import axios from "../api/axios";
 
 const CATEGORIES = [
-  { id: "all", name: "All Categories", icon: "✨" },
-  { id: "electrician", name: "Electricians", icon: "⚡" },
-  { id: "plumber", name: "Plumbers", icon: "🔧" },
-  { id: "tutor", name: "Tutors", icon: "📚" },
-  { id: "home-services", name: "Home Services", icon: "🧹" },
-  { id: "computer", name: "Computer Services", icon: "💻" },
-  { id: "graphic-design", name: "Graphic Designers", icon: "🎨" },
-  { id: "tailor", name: "Tailors", icon: "✂️" },
-  { id: "mechanic", name: "Mechanics", icon: "🚗" },
+  { 
+    id: "all", 
+    name: "All Categories", 
+    icon: "✨", 
+    keywords: [] 
+  },
+  { 
+    id: "electrician", 
+    name: "Electricians", 
+    icon: "⚡", 
+    keywords: [
+      "electric", "wiring", "wire", "light", "lighting", "generator", 
+      "fan", "ups", "solar", "inverter", "circuit", "breaker", "switch", "short circuit"
+    ] 
+  },
+  { 
+    id: "plumber", 
+    name: "Plumbers", 
+    icon: "🔧", 
+    keywords: [
+      "plumb", "plumbing", "pipe", "pipeline", "tank", "fitting", 
+      "leak", "leakage", "bathroom", "sanitary", "water", "geyser", "tap", "drain", "motor"
+    ] 
+  },
+  { 
+    id: "tutor", 
+    name: "Tutors", 
+    icon: "📚", 
+    keywords: [
+      "tutor", "tutoring", "tuition", "math", "mathematics", "english", 
+      "physics", "chemistry", "biology", "quran", "islamiyat", "urdu", 
+      "coaching", "classes", "academy", "o/a level", "matric", "fsc"
+    ] 
+  },
+  { 
+    id: "home-services", 
+    name: "Home Services", 
+    icon: "🧹", 
+    keywords: [
+      "home", "house", "clean", "cleaning", "maid", "repair", 
+      "deep clean", "painting", "carpenter", "pest", "pest control", "laundry", "carpet"
+    ] 
+  },
+  { 
+    id: "computer", 
+    name: "Computer Services", 
+    icon: "💻", 
+    keywords: [
+      "computer", "pc", "laptop", "windows", "software", "hardware", 
+      "networking", "router", "wifi", "printer", "data recovery", "format", "installation"
+    ] 
+  },
+  { 
+    id: "graphic-design", 
+    name: "Graphic Designers", 
+    icon: "🎨", 
+    keywords: [
+      "graphic", "design", "designer", "logo", "branding", "photoshop", 
+      "illustrator", "banner", "flyer", "poster", "social media", "ui", "ux", "card"
+    ] 
+  },
+  { 
+    id: "tailor", 
+    name: "Tailors", 
+    icon: "✂️", 
+    keywords: [
+      "tailor", "tailoring", "suit", "shalwar", "kameez", "cloth", 
+      "clothes", "stitch", "stitching", "dress", "alteration", "gents", "ladies", "waistcoat"
+    ] 
+  },
+  { 
+    id: "mechanic", 
+    name: "Mechanics", 
+    icon: "🚗", 
+    keywords: [
+      "mechanic", "car", "auto", "automobile", "engine", "brake", 
+      "oil", "tuning", "bike", "motorcycle", "wheel", "alignment", "radiator", "suspension"
+    ] 
+  },
 ];
 
 const CATEGORY_IMAGES = {

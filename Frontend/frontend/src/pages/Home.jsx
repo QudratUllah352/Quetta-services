@@ -126,52 +126,6 @@ export default function Home() {
           <p className="mt-4 text-lg text-slate-300 max-w-2xl mx-auto">
             Book top-rated electricians, tutors, plumbers, tailors, and mechanics across Quetta with transparent pricing and real reviews.
           </p>
-
-          {/* Search Box */}
-          <div className="mt-8 bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 shadow-2xl max-w-4xl mx-auto">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-slate-900">
-              <input
-                type="text"
-                placeholder="Search services..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-
-              <select
-                value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">All Locations in Quetta</option>
-                <option value="Jinnah Town">Jinnah Town</option>
-                <option value="Quetta Cantt">Quetta Cantt</option>
-                <option value="Samungli Road">Samungli Road</option>
-                <option value="Brewery Road">Brewery Road</option>
-                <option value="Nawan Killi">Nawan Killi</option>
-                <option value="Airport Road">Airport Road</option>
-              </select>
-
-              <input
-                type="number"
-                placeholder="Max Budget (PKR)"
-                value={priceMax}
-                onChange={(e) => setPriceMax(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-
-              <select
-                value={minRating}
-                onChange={(e) => setMinRating(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Any Rating</option>
-                <option value="4">★ 4.0 & above</option>
-                <option value="4.5">★ 4.5 & above</option>
-                <option value="5">★ 5.0 only</option>
-              </select>
-            </div>
-          </div>
         </div>
       </section>
 

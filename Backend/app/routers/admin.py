@@ -2,9 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from datetime import datetime, timezone
+from pydantic import BaseModel
+from typing import Optional
 
 from app.database import get_db
-from app.models.user import User, UserRole
+from app.models.user import User, UserRole, VerificationStatus
 from app.models.service import Service, ServiceStatus, Category
 from app.models.booking import Booking
 from app.models.review import Review
@@ -18,7 +20,12 @@ from app.auth.dependencies import require_admin
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
-# --- Users ---
+class VerificationDecision(BaseModel):
+    status: VerificationStatus  # 'verified' or 'rejected'
+    rejection_reason: Optional[str] = None
+
+
+# --- Users & Verification Moderation ---
 
 @router.get("/users", response_model=list[UserRead])
 def list_users(
@@ -26,6 +33,58 @@ def list_users(
     current_user: User = Depends(require_admin),
 ):
     return db.execute(select(User).order_by(User.created_at.desc())).scalars().all()
+
+
+@router.get("/verifications", response_model=list[UserRead])
+def list_pending_verifications(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Returns all service providers who have submitted documents and are awaiting verification."""
+    return (
+        db.execute(
+            select(User)
+            .where(
+                User.role == UserRole.provider,
+                User.verification_status == VerificationStatus.pending,
+            )
+            .order_by(User.created_at.desc())
+        )
+        .scalars()
+        .all()
+    )
+
+
+@router.patch("/verifications/{user_id}", response_model=UserRead)
+def review_provider_verification(
+    user_id: int,
+    decision: VerificationDecision,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Approves or rejects a service provider's verification documents."""
+    user = db.get(User, user_id)
+    if not user or user.role != UserRole.provider:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Service provider not found.",
+        )
+
+    if decision.status not in [VerificationStatus.verified, VerificationStatus.rejected]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Verification status must be either 'verified' or 'rejected'.",
+        )
+
+    user.verification_status = decision.status
+    if decision.status == VerificationStatus.rejected:
+        user.rejection_reason = decision.rejection_reason or "Document verification criteria not met."
+    else:
+        user.rejection_reason = None
+
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 @router.patch("/users/{user_id}/deactivate", response_model=UserRead)
@@ -102,8 +161,6 @@ def list_all_bookings(
 
 
 # --- Categories ---
-# No dedicated router yet, so category management lives here for now -
-# admin is the only role that should be able to create/manage categories.
 
 @router.post("/categories", response_model=CategoryRead, status_code=status.HTTP_201_CREATED)
 def create_category(
@@ -166,10 +223,6 @@ def resolve_report(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
-    """Mark a report as actioned. This does NOT automatically deactivate the
-    underlying content - the admin reviews it and calls the relevant
-    deactivate endpoint (services or, if extended later, reviews) separately,
-    so a report can be resolved either way without forcing a takedown."""
     return _resolve_report_status(report_id, ReportStatus.resolved, db)
 
 

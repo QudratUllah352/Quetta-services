@@ -15,16 +15,6 @@ const CATEGORIES = [
   { id: "mechanic", name: "Mechanics", icon: "🚗" },
 ];
 
-const POPULAR_TAGS = [
-  "UPS & Solar Setup",
-  "AC Repair",
-  "Water Tank Leak",
-  "FSc Physics Tuition",
-  "Car Engine Tuning",
-  "Shalwar Kameez Stitching",
-  "Home Deep Clean",
-];
-
 const CATEGORY_IMAGES = {
   electric: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600&auto=format&fit=crop&q=60",
   plumb: "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=600&auto=format&fit=crop&q=60",
@@ -64,10 +54,6 @@ export default function Home() {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedLocation, setSelectedLocation] = useState("");
-  const [priceMax, setPriceMax] = useState("");
-  const [minRating, setMinRating] = useState("");
 
   const isProvider = token && user?.role?.toLowerCase() === "provider";
 
@@ -90,13 +76,7 @@ export default function Home() {
   const filteredServices = services.filter((service) => {
     const sTitle = (service.title || "").toLowerCase();
     const sDesc = (service.description || "").toLowerCase();
-    const sLoc = (service.location || "").toLowerCase();
     const sCat = (service.category?.name || service.category || "").toLowerCase();
-
-    const matchesSearch =
-      !searchQuery ||
-      sTitle.includes(searchQuery.toLowerCase()) ||
-      sDesc.includes(searchQuery.toLowerCase());
 
     let matchesCategory = selectedCategory === "all";
     if (!matchesCategory) {
@@ -119,19 +99,7 @@ export default function Home() {
       }
     }
 
-    const matchesLocation =
-      !selectedLocation || sLoc.includes(selectedLocation.toLowerCase());
-    const matchesPrice = !priceMax || Number(service.price) <= Number(priceMax);
-    const matchesRating =
-      !minRating || Number(service.rating || 0) >= Number(minRating);
-
-    return (
-      matchesSearch &&
-      matchesCategory &&
-      matchesLocation &&
-      matchesPrice &&
-      matchesRating
-    );
+    return matchesCategory;
   });
 
   const getServiceImage = (service) => {
@@ -145,78 +113,18 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between">
       <div>
-        {/* Hero Section */}
-        <section className="bg-linear-to-b from-blue-900 via-indigo-900 to-slate-900 text-white py-16 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-6xl mx-auto text-center">
-            <span className="inline-block py-1 px-3 rounded-full bg-blue-500/20 text-blue-300 text-xs font-semibold tracking-wide uppercase mb-4 border border-blue-400/30">
+        {/* Clean Hero Section */}
+        <section className="bg-linear-to-b from-blue-900 via-indigo-900 to-slate-900 text-white py-20 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-4xl mx-auto text-center">
+            <span className="inline-block py-1.5 px-4 rounded-full bg-blue-500/20 text-blue-300 text-xs font-semibold tracking-wide uppercase mb-5 border border-blue-400/30">
               Quetta's Verified Service Network
             </span>
-            <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight">
+            <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-tight">
               Find Trusted Local Services in Quetta
             </h1>
-            <p className="mt-4 text-lg text-slate-300 max-w-2xl mx-auto">
+            <p className="mt-5 text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
               Book top-rated electricians, tutors, plumbers, tailors, and mechanics across Quetta with transparent pricing and real reviews.
             </p>
-
-            {/* Search Box */}
-            <div className="mt-8 bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 shadow-2xl max-w-4xl mx-auto">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-slate-900">
-                <input
-                  type="text"
-                  placeholder="Search services..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-
-                <select
-                  value={selectedLocation}
-                  onChange={(e) => setSelectedLocation(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">All Locations in Quetta</option>
-                  <option value="Jinnah Town">Jinnah Town</option>
-                  <option value="Quetta Cantt">Quetta Cantt</option>
-                  <option value="Samungli Road">Samungli Road</option>
-                  <option value="Brewery Road">Brewery Road</option>
-                  <option value="Nawan Killi">Nawan Killi</option>
-                  <option value="Airport Road">Airport Road</option>
-                </select>
-
-                <input
-                  type="number"
-                  placeholder="Max Budget (PKR)"
-                  value={priceMax}
-                  onChange={(e) => setPriceMax(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-
-                <select
-                  value={minRating}
-                  onChange={(e) => setMinRating(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Any Rating</option>
-                  <option value="4">★ 4.0 & above</option>
-                  <option value="4.5">★ 4.5 & above</option>
-                  <option value="5">★ 5.0 only</option>
-                </select>
-              </div>
-
-              {/* Popular Quetta Shortcut Tags */}
-              <div className="mt-3.5 flex items-center justify-center flex-wrap gap-2 text-xs text-slate-300">
-                <span className="font-semibold text-slate-400">Popular:</span>
-                {POPULAR_TAGS.map((tag) => (
-                  <button
-                    key={tag}
-                    onClick={() => setSearchQuery(tag)}
-                    className="bg-white/10 hover:bg-white/20 text-slate-200 px-2.5 py-1 rounded-full border border-white/10 transition-colors"
-                  >
-                    {tag}
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
         </section>
 
@@ -246,7 +154,7 @@ export default function Home() {
         )}
 
         {/* Category Pills Slider */}
-        <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-3 overflow-x-auto flex gap-2">
             {CATEGORIES.map((cat) => {
               const isActive = selectedCategory === cat.id;
@@ -254,7 +162,7 @@ export default function Home() {
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
-                  className={`flex items-center gap-2 whitespace-nowrap px-4 py-2 rounded-xl text-sm font-medium transition-all duration-150 ${
+                  className={`flex items-center gap-2 whitespace-nowrap px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
                     isActive
                       ? "bg-blue-600 text-white shadow-md shadow-blue-500/30"
                       : "bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/60"
@@ -268,7 +176,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 1. Trust & Verification Badges Bar */}
+        {/* Trust & Verification Badges Bar */}
         <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
             <div className="flex items-center gap-3.5">
@@ -308,25 +216,21 @@ export default function Home() {
           <div className="flex justify-between items-center mb-6">
             <div>
               <h2 className="text-xl font-bold text-slate-800">
-                {selectedCategory === "all" ? "Available Services" : `${CATEGORIES.find((c) => c.id === selectedCategory)?.name || "Services"}`}
+                {selectedCategory === "all"
+                  ? "Available Services"
+                  : `${CATEGORIES.find((c) => c.id === selectedCategory)?.name || "Services"}`}
               </h2>
               <p className="text-sm text-slate-500">
                 Showing {filteredServices.length} verified listings in Quetta
               </p>
             </div>
 
-            {(searchQuery || selectedLocation || priceMax || minRating || selectedCategory !== "all") && (
+            {selectedCategory !== "all" && (
               <button
-                onClick={() => {
-                  setSearchQuery("");
-                  setSelectedLocation("");
-                  setPriceMax("");
-                  setMinRating("");
-                  setSelectedCategory("all");
-                }}
+                onClick={() => setSelectedCategory("all")}
                 className="text-xs font-semibold text-blue-600 hover:text-blue-800 underline"
               >
-                Reset Filters
+                Reset Category
               </button>
             )}
           </div>
@@ -340,9 +244,9 @@ export default function Home() {
           ) : filteredServices.length === 0 ? (
             <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center max-w-lg mx-auto">
               <span className="text-4xl">🔍</span>
-              <h3 className="mt-4 text-base font-semibold text-slate-800">No matching services found</h3>
+              <h3 className="mt-4 text-base font-semibold text-slate-800">No services found in this category</h3>
               <p className="mt-1 text-sm text-slate-500">
-                Try clicking "All Categories" or resetting your search filters.
+                Try selecting "All Categories" to view available listings.
               </p>
             </div>
           ) : (
@@ -403,7 +307,7 @@ export default function Home() {
           )}
         </section>
 
-        {/* 2. "How It Works" 3-Step Section */}
+        {/* "How It Works" 3-Step Section */}
         <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-20">
           <div className="text-center max-w-2xl mx-auto mb-10">
             <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
@@ -447,7 +351,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 3. Customer Testimonials Section */}
+        {/* Customer Testimonials Section */}
         <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-20">
           <div className="text-center max-w-2xl mx-auto mb-10">
             <span className="text-xs font-bold uppercase tracking-wider text-blue-600">
@@ -487,7 +391,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 4. Provider Recruitment CTA Banner */}
+        {/* Provider Recruitment CTA Banner */}
         <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-20 mb-16">
           <div className="bg-linear-to-r from-slate-900 via-indigo-950 to-blue-900 rounded-3xl p-8 sm:p-12 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-8">
             <div className="max-w-xl text-center md:text-left">
@@ -512,11 +416,10 @@ export default function Home() {
         </section>
       </div>
 
-      {/* 5. Modern Footer */}
+      {/* Modern Footer */}
       <footer className="bg-white border-t border-slate-200 pt-12 pb-8">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
-            {/* Column 1: Brand Info */}
             <div className="md:col-span-1 space-y-3">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-black text-sm">
@@ -531,7 +434,6 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Column 2: Popular Categories */}
             <div>
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-3">
                 Services
@@ -544,7 +446,6 @@ export default function Home() {
               </ul>
             </div>
 
-            {/* Column 3: Coverage Areas */}
             <div>
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-3">
                 Popular Locations
@@ -557,7 +458,6 @@ export default function Home() {
               </ul>
             </div>
 
-            {/* Column 4: Support & Actions */}
             <div>
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-3">
                 Get Started

@@ -18,18 +18,15 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const loggedInUser = await login(email, password);
-      
-      // Smart role-based destination routing
-      if (loggedInUser?.role === "provider") {
-        navigate("/provider");
-      } else if (loggedInUser?.role === "admin") {
-        navigate("/admin");
-      } else {
-        navigate("/");
-      }
+      await login(email, password);
+      // Redirects every logged-in user directly to the home page
+      navigate("/");
     } catch (err) {
-      setError(getErrorMessage ? getErrorMessage(err) : (err.response?.data?.detail || "Invalid email or password."));
+      setError(
+        getErrorMessage
+          ? getErrorMessage(err)
+          : err.response?.data?.detail || "Invalid email or password."
+      );
     } finally {
       setLoading(false);
     }
@@ -40,7 +37,7 @@ export default function Login() {
       <div className="w-full max-w-md bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-100 p-8 sm:p-10 transition-all">
         {/* Brand Icon Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-linear-to-tr from-blue-600 to-indigo-600 text-white font-black text-xl shadow-lg shadow-blue-500/25 mb-4">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-black text-xl shadow-lg shadow-blue-500/25 mb-4">
             Q
           </div>
           <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">

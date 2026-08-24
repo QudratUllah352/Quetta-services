@@ -2,91 +2,22 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "../api/axios";
 
-const CATEGORIES = [
-  { 
-    id: "all", 
-    name: "All Categories", 
-    icon: "✨", 
-    keywords: [] 
-  },
-  { 
-    id: "electrician", 
-    name: "Electricians", 
-    icon: "⚡", 
-    keywords: [
-      "electric", "wiring", "wire", "light", "lighting", "generator", 
-      "fan", "ups", "solar", "inverter", "circuit", "breaker", "switch", "short circuit"
-    ] 
-  },
-  { 
-    id: "plumber", 
-    name: "Plumbers", 
-    icon: "🔧", 
-    keywords: [
-      "plumb", "plumbing", "pipe", "pipeline", "tank", "fitting", 
-      "leak", "leakage", "bathroom", "sanitary", "water", "geyser", "tap", "drain", "motor"
-    ] 
-  },
-  { 
-    id: "tutor", 
-    name: "Tutors", 
-    icon: "📚", 
-    keywords: [
-      "tutor", "tutoring", "tuition", "math", "mathematics", "english", 
-      "physics", "chemistry", "biology", "quran", "islamiyat", "urdu", 
-      "coaching", "classes", "academy", "o/a level", "matric", "fsc"
-    ] 
-  },
-  { 
-    id: "home-services", 
-    name: "Home Services", 
-    icon: "🧹", 
-    keywords: [
-      "home", "house", "clean", "cleaning", "maid", "repair", 
-      "deep clean", "painting", "carpenter", "pest", "pest control", "laundry", "carpet"
-    ] 
-  },
-  { 
-    id: "computer", 
-    name: "Computer Services", 
-    icon: "💻", 
-    keywords: [
-      "computer", "pc", "laptop", "windows", "software", "hardware", 
-      "networking", "router", "wifi", "printer", "data recovery", "format", "installation"
-    ] 
-  },
-  { 
-    id: "graphic-design", 
-    name: "Graphic Designers", 
-    icon: "🎨", 
-    keywords: [
-      "graphic", "design", "designer", "logo", "branding", "photoshop", 
-      "illustrator", "banner", "flyer", "poster", "social media", "ui", "ux", "card"
-    ] 
-  },
-  { 
-    id: "tailor", 
-    name: "Tailors", 
-    icon: "✂️", 
-    keywords: [
-      "tailor", "tailoring", "suit", "shalwar", "kameez", "cloth", 
-      "clothes", "stitch", "stitching", "dress", "alteration", "gents", "ladies", "waistcoat"
-    ] 
-  },
-  { 
-    id: "mechanic", 
-    name: "Mechanics", 
-    icon: "🚗", 
-    keywords: [
-      "mechanic", "car", "auto", "automobile", "engine", "brake", 
-      "oil", "tuning", "bike", "motorcycle", "wheel", "alignment", "radiator", "suspension"
-    ] 
-  },
-];
+// Default icons mapped by category name keywords
+const ICONS_MAP = {
+  electric: "⚡",
+  plumb: "🔧",
+  tutor: "📚",
+  home: "🧹",
+  computer: "💻",
+  design: "🎨",
+  tailor: "✂️",
+  mechanic: "🚗",
+  default: "✨",
+};
 
 const CATEGORY_IMAGES = {
-  electrician: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600&auto=format&fit=crop&q=60",
-  plumber: "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=600&auto=format&fit=crop&q=60",
+  electric: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600&auto=format&fit=crop&q=60",
+  plumb: "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=600&auto=format&fit=crop&q=60",
   tutor: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=600&auto=format&fit=crop&q=60",
   computer: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&auto=format&fit=crop&q=60",
   mechanic: "https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=600&auto=format&fit=crop&q=60",
@@ -96,6 +27,7 @@ const CATEGORY_IMAGES = {
 
 export default function Home() {
   const [services, setServices] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -104,36 +36,83 @@ export default function Home() {
   const [minRating, setMinRating] = useState("");
 
   useEffect(() => {
-    fetchServices();
+    fetchInitialData();
   }, []);
 
-  const fetchServices = async () => {
+  const fetchInitialData = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("/services");
-      setServices(res.data || []);
+      const [servicesRes, categoriesRes] = await Promise.allSettled([
+        axios.get("/services"),
+        axios.get("/categories"),
+      ]);
+
+      if (servicesRes.status === "fulfilled") {
+        setServices(servicesRes.value.data || []);
+      }
+      if (categoriesRes.status === "fulfilled") {
+        setCategories(categoriesRes.value.data || []);
+      }
     } catch (err) {
-      console.error("Failed to load services:", err);
+      console.error("Error loading initial marketplace data:", err);
     } finally {
       setLoading(false);
     }
   };
 
+  // Helper to resolve icon
+  const getCategoryIcon = (catName) => {
+    const lower = (catName || "").toLowerCase();
+    for (const [key, icon] of Object.entries(ICONS_MAP)) {
+      if (lower.includes(key)) return icon;
+    }
+    return ICONS_MAP.default;
+  };
+
+  // Helper to resolve image
+  const getServiceImage = (service) => {
+    const text = `${service.title || ""} ${service.category?.name || service.category || ""} ${service.description || ""}`.toLowerCase();
+    for (const [key, url] of Object.entries(CATEGORY_IMAGES)) {
+      if (text.includes(key)) return url;
+    }
+    return CATEGORY_IMAGES.default;
+  };
+
+  // Robust Filter matching both ID, Object, and string representations
   const filteredServices = services.filter((service) => {
+    const sTitle = (service.title || "").toLowerCase();
+    const sDesc = (service.description || "").toLowerCase();
+    const sLoc = (service.location || "").toLowerCase();
+
+    // 1. Search Query
     const matchesSearch =
-      service.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      service.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      !searchQuery ||
+      sTitle.includes(searchQuery.toLowerCase()) ||
+      sDesc.includes(searchQuery.toLowerCase());
 
-    const matchesCategory =
-      selectedCategory === "all" ||
-      service.category?.toLowerCase() === selectedCategory.toLowerCase();
+    // 2. Category Match: checks ID, nested category object name, or category string
+    let matchesCategory = selectedCategory === "all";
+    if (!matchesCategory) {
+      const catIdMatch =
+        String(service.category_id) === String(selectedCategory) ||
+        String(service.category?.id) === String(selectedCategory);
 
+      const catNameMatch =
+        (service.category?.name || service.category || "")
+          .toLowerCase()
+          .includes(String(selectedCategory).toLowerCase());
+
+      matchesCategory = catIdMatch || catNameMatch;
+    }
+
+    // 3. Location Match
     const matchesLocation =
-      !selectedLocation ||
-      service.location?.toLowerCase().includes(selectedLocation.toLowerCase());
+      !selectedLocation || sLoc.includes(selectedLocation.toLowerCase());
 
+    // 4. Price Match
     const matchesPrice = !priceMax || Number(service.price) <= Number(priceMax);
 
+    // 5. Rating Match
     const matchesRating =
       !minRating || Number(service.rating || 0) >= Number(minRating);
 
@@ -146,13 +125,20 @@ export default function Home() {
     );
   });
 
-  const getServiceImage = (category) => {
-    const key = category?.toLowerCase() || "";
-    for (const [catKey, url] of Object.entries(CATEGORY_IMAGES)) {
-      if (key.includes(catKey)) return url;
-    }
-    return CATEGORY_IMAGES.default;
-  };
+  // Fallback categories if database has no categories endpoint populated yet
+  const displayCategories =
+    categories.length > 0
+      ? categories
+      : [
+          { id: "Electrician", name: "Electricians" },
+          { id: "Plumber", name: "Plumbers" },
+          { id: "Tutor", name: "Tutors" },
+          { id: "Home Services", name: "Home Services" },
+          { id: "Computer Services", name: "Computer Services" },
+          { id: "Graphic Designer", name: "Graphic Designers" },
+          { id: "Tailor", name: "Tailors" },
+          { id: "Mechanic", name: "Mechanics" },
+        ];
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
@@ -217,22 +203,37 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Category Pills */}
+      {/* Category Pills Slider */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6">
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-3 overflow-x-auto flex gap-2">
-          {CATEGORIES.map((cat) => {
-            const isActive = selectedCategory === cat.id;
+          {/* All Categories Button */}
+          <button
+            onClick={() => setSelectedCategory("all")}
+            className={`flex items-center gap-2 whitespace-nowrap px-4 py-2 rounded-xl text-sm font-medium transition-all duration-150 ${
+              selectedCategory === "all"
+                ? "bg-blue-600 text-white shadow-md shadow-blue-500/30"
+                : "bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/60"
+            }`}
+          >
+            <span>✨</span>
+            <span>All Categories</span>
+          </button>
+
+          {/* Dynamic Categories from DB */}
+          {displayCategories.map((cat) => {
+            const catKey = cat.id || cat.name;
+            const isActive = String(selectedCategory) === String(catKey);
             return (
               <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.id)}
+                key={catKey}
+                onClick={() => setSelectedCategory(catKey)}
                 className={`flex items-center gap-2 whitespace-nowrap px-4 py-2 rounded-xl text-sm font-medium transition-all duration-150 ${
                   isActive
                     ? "bg-blue-600 text-white shadow-md shadow-blue-500/30"
                     : "bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/60"
                 }`}
               >
-                <span>{cat.icon}</span>
+                <span>{getCategoryIcon(cat.name)}</span>
                 <span>{cat.name}</span>
               </button>
             );
@@ -244,9 +245,7 @@ export default function Home() {
       <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h2 className="text-xl font-bold text-slate-800">
-              {selectedCategory === "all" ? "Available Services" : `${selectedCategory.toUpperCase()} Services`}
-            </h2>
+            <h2 className="text-xl font-bold text-slate-800">Available Services</h2>
             <p className="text-sm text-slate-500">
               Showing {filteredServices.length} verified listings in Quetta
             </p>
@@ -279,7 +278,7 @@ export default function Home() {
             <span className="text-4xl">🔍</span>
             <h3 className="mt-4 text-base font-semibold text-slate-800">No matching services found</h3>
             <p className="mt-1 text-sm text-slate-500">
-              Try modifying your search terms, removing filters, or choosing another category.
+              Try clicking "All Categories" or resetting your filters.
             </p>
           </div>
         ) : (
@@ -292,7 +291,7 @@ export default function Home() {
                 {/* Image Banner */}
                 <div className="relative h-44 w-full overflow-hidden bg-slate-100">
                   <img
-                    src={service.image_url || getServiceImage(service.category)}
+                    src={service.image_url || getServiceImage(service)}
                     alt={service.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />

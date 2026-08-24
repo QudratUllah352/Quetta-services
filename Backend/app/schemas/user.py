@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, EmailStr, ConfigDict, Field
-from app.models.user import UserRole
+from app.models.user import UserRole, VerificationStatus
 
 
 class UserBase(BaseModel):
@@ -28,7 +28,12 @@ class UserRead(UserBase):
     id: int
     role: UserRole
     is_active: bool
-    created_at: datetime
+    verification_status: VerificationStatus = VerificationStatus.unsubmitted
+    cnic_number: Optional[str] = None
+    document_url: Optional[str] = None
+    rejection_reason: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
 
 class UserLogin(BaseModel):

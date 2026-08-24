@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "../api/axios";
+import { useAuth } from "../context/AuthContext";
 
 const CATEGORIES = [
   { id: "all", name: "All Categories", icon: "✨" },
@@ -25,6 +26,7 @@ const CATEGORY_IMAGES = {
 };
 
 export default function Home() {
+  const { user, token } = useAuth();
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -32,6 +34,8 @@ export default function Home() {
   const [selectedLocation, setSelectedLocation] = useState("");
   const [priceMax, setPriceMax] = useState("");
   const [minRating, setMinRating] = useState("");
+
+  const isProvider = token && user?.role?.toLowerCase() === "provider";
 
   useEffect(() => {
     fetchServices();
@@ -126,11 +130,82 @@ export default function Home() {
           <p className="mt-4 text-lg text-slate-300 max-w-2xl mx-auto">
             Book top-rated electricians, tutors, plumbers, tailors, and mechanics across Quetta with transparent pricing and real reviews.
           </p>
+
+          {/* Interactive Search & Filter Controls */}
+          <div className="mt-8 bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 shadow-2xl max-w-4xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-slate-900">
+              <input
+                type="text"
+                placeholder="Search services..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+
+              <select
+                value={selectedLocation}
+                onChange={(e) => setSelectedLocation(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All Locations in Quetta</option>
+                <option value="Jinnah Town">Jinnah Town</option>
+                <option value="Quetta Cantt">Quetta Cantt</option>
+                <option value="Samungli Road">Samungli Road</option>
+                <option value="Brewery Road">Brewery Road</option>
+                <option value="Nawan Killi">Nawan Killi</option>
+                <option value="Airport Road">Airport Road</option>
+              </select>
+
+              <input
+                type="number"
+                placeholder="Max Budget (PKR)"
+                value={priceMax}
+                onChange={(e) => setPriceMax(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+
+              <select
+                value={minRating}
+                onChange={(e) => setMinRating(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Any Rating</option>
+                <option value="4">★ 4.0 & above</option>
+                <option value="4.5">★ 4.5 & above</option>
+                <option value="5">★ 5.0 only</option>
+              </select>
+            </div>
+          </div>
         </div>
       </section>
 
+      {/* Provider Quick-Action Banner */}
+      {isProvider && (
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+          <div className="bg-emerald-50 border border-emerald-200/80 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🛠️</span>
+              <div>
+                <p className="text-sm font-bold text-emerald-900">
+                  Welcome to Provider Mode ({user?.name || user?.full_name || "Provider"})
+                </p>
+                <p className="text-xs text-emerald-700 mt-0.5">
+                  Manage your listings, accept new customer orders, and update booking progress.
+                </p>
+              </div>
+            </div>
+            <Link
+              to="/provider"
+              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all whitespace-nowrap"
+            >
+              Open Provider Portal →
+            </Link>
+          </div>
+        </section>
+      )}
+
       {/* Category Pills Slider */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6">
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-3 overflow-x-auto flex gap-2">
           {CATEGORIES.map((cat) => {
             const isActive = selectedCategory === cat.id;
@@ -238,9 +313,13 @@ export default function Home() {
 
                     <Link
                       to={`/services/${service.id}`}
-                      className="px-4 py-2 bg-slate-900 group-hover:bg-blue-600 text-white text-sm font-medium rounded-xl transition-colors shadow-sm"
+                      className={`px-4 py-2 text-white text-sm font-medium rounded-xl transition-colors shadow-sm ${
+                        isProvider
+                          ? "bg-slate-800 hover:bg-slate-700"
+                          : "bg-slate-900 group-hover:bg-blue-600"
+                      }`}
                     >
-                      Book Now
+                      {isProvider ? "View Details" : "Book Now"}
                     </Link>
                   </div>
                 </div>

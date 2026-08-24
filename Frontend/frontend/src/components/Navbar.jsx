@@ -15,13 +15,15 @@ export default function Navbar() {
   const navLinkStyle = ({ isActive }) =>
     `text-sm font-medium transition-colors duration-150 ${
       isActive
-        ? "text-blue-600 font-semibold"
+        ? "text-blue-600 font-bold"
         : "text-slate-600 hover:text-slate-900"
     }`;
 
-  const isCustomer = token && (!user?.role || user?.role === "customer");
-  const isProvider = token && user?.role === "provider";
-  const isAdmin = token && user?.role === "admin";
+  // Strict role detection to prevent defaulting to customer when role is missing/different
+  const userRole = (user?.role || "").toLowerCase();
+  const isProvider = token && userRole === "provider";
+  const isCustomer = token && userRole === "customer";
+  const isAdmin = token && userRole === "admin";
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
@@ -71,16 +73,35 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-3">
             {token ? (
               <div className="flex items-center gap-3">
+                {/* User Pill Badge */}
                 <div className="flex items-center gap-2.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-full">
-                  <div className="w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center uppercase">
-                    {user?.name || user?.full_name ? (user.name || user.full_name).charAt(0) : "U"}
+                  <div
+                    className={`w-7 h-7 rounded-full text-white text-xs font-bold flex items-center justify-center uppercase ${
+                      isProvider
+                        ? "bg-emerald-600"
+                        : isAdmin
+                        ? "bg-purple-600"
+                        : "bg-blue-600"
+                    }`}
+                  >
+                    {user?.name || user?.full_name
+                      ? (user.name || user.full_name).charAt(0)
+                      : "U"}
                   </div>
                   <div className="text-left pr-1">
                     <p className="text-xs font-semibold text-slate-800 leading-none">
-                      {user?.name || user?.full_name || "My Account"}
+                      {user?.name || user?.full_name || "Account"}
                     </p>
-                    <span className="text-[10px] text-slate-400 capitalize">
-                      {user?.role || "Member"}
+                    <span
+                      className={`text-[10px] font-bold uppercase tracking-wider block mt-0.5 ${
+                        isProvider
+                          ? "text-emerald-600"
+                          : isAdmin
+                          ? "text-purple-600"
+                          : "text-blue-600"
+                      }`}
+                    >
+                      {userRole || "User"}
                     </span>
                   </div>
                 </div>
@@ -153,7 +174,7 @@ export default function Navbar() {
             <Link
               to="/provider"
               onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg text-sm text-blue-600 hover:bg-blue-50 font-semibold"
+              className="block px-3 py-2 rounded-lg text-sm text-emerald-600 hover:bg-emerald-50 font-semibold"
             >
               Provider Portal
             </Link>
@@ -163,7 +184,7 @@ export default function Navbar() {
             <Link
               to="/admin"
               onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg text-sm text-blue-600 hover:bg-blue-50 font-semibold"
+              className="block px-3 py-2 rounded-lg text-sm text-purple-600 hover:bg-purple-50 font-semibold"
             >
               Admin Panel
             </Link>
@@ -178,7 +199,7 @@ export default function Navbar() {
                 }}
                 className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50"
               >
-                Log Out
+                Log Out ({user?.name || user?.full_name || "User"})
               </button>
             ) : (
               <div className="flex flex-col gap-2">

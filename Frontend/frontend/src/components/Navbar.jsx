@@ -19,11 +19,6 @@ export default function Navbar() {
         : "text-slate-600 hover:text-slate-900"
     }`;
 
-  // Check if current user is a customer (or default authenticated role)
-  const isCustomer = token && (!user?.role || user?.role === "customer");
-  const isProvider = token && user?.role === "provider";
-  const isAdmin = token && user?.role === "admin";
-
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -49,22 +44,20 @@ export default function Navbar() {
               Home
             </NavLink>
 
-            {/* Customer Dashboard Navigation */}
-            {isCustomer && (
+            {/* Role-Specific Links */}
+            {token && user?.role === "customer" && (
               <NavLink to="/dashboard" className={navLinkStyle}>
-                Customer Dashboard
+                My Bookings
               </NavLink>
             )}
 
-            {/* Provider Portal Navigation */}
-            {isProvider && (
+            {token && user?.role === "provider" && (
               <NavLink to="/provider" className={navLinkStyle}>
                 Provider Portal
               </NavLink>
             )}
 
-            {/* Admin Panel Navigation */}
-            {isAdmin && (
+            {token && user?.role === "admin" && (
               <NavLink to="/admin" className={navLinkStyle}>
                 Admin Panel
               </NavLink>
@@ -78,14 +71,14 @@ export default function Navbar() {
                 {/* User Profile Pill */}
                 <div className="flex items-center gap-2.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-full">
                   <div className="w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center uppercase">
-                    {user?.name || user?.full_name ? (user.name || user.full_name).charAt(0) : "C"}
+                    {user?.name ? user.name.charAt(0) : "U"}
                   </div>
                   <div className="text-left pr-1">
                     <p className="text-xs font-semibold text-slate-800 leading-none">
-                      {user?.name || user?.full_name || "Customer"}
+                      {user?.name || "My Account"}
                     </p>
                     <span className="text-[10px] text-slate-400 capitalize">
-                      {user?.role || "Customer"}
+                      {user?.role || "Member"}
                     </span>
                   </div>
                 </div>
@@ -115,17 +108,32 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile Hamburger Toggle */}
+          {/* Mobile Menu Toggle Button */}
           <div className="flex md:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 text-slate-600 hover:text-slate-900 focus:outline-none"
             >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
                 {mobileMenuOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
                 )}
               </svg>
             </button>
@@ -144,31 +152,31 @@ export default function Navbar() {
             Home
           </Link>
 
-          {isCustomer && (
+          {token && user?.role === "customer" && (
             <Link
               to="/dashboard"
               onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg text-sm font-semibold text-blue-600 hover:bg-blue-50"
+              className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"
             >
-              Customer Dashboard
+              My Bookings
             </Link>
           )}
 
-          {isProvider && (
+          {token && user?.role === "provider" && (
             <Link
               to="/provider"
               onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg text-sm font-medium text-blue-600 hover:bg-blue-50"
+              className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"
             >
               Provider Portal
             </Link>
           )}
 
-          {isAdmin && (
+          {token && user?.role === "admin" && (
             <Link
               to="/admin"
               onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg text-sm font-medium text-blue-600 hover:bg-blue-50"
+              className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"
             >
               Admin Panel
             </Link>
@@ -183,7 +191,7 @@ export default function Navbar() {
                 }}
                 className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50"
               >
-                Log Out ({user?.name || user?.full_name || "Customer"})
+                Log Out ({user?.name || "Account"})
               </button>
             ) : (
               <div className="flex flex-col gap-2">

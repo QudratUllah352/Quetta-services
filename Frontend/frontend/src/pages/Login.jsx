@@ -19,7 +19,7 @@ export default function Login() {
 
     try {
       await login(email, password);
-      // Redirects every logged-in user directly to the home page
+      // Navigates directly to the home page for all users
       navigate("/");
     } catch (err) {
       setError(

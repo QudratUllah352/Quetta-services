@@ -273,9 +273,21 @@ export default function Home() {
 
                   <div className="p-5 flex-1 flex flex-col justify-between">
                     <div>
-                      <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
-                        {service.title}
-                      </h3>
+                      {/* Title + Verification Badge */}
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                          {service.title}
+                        </h3>
+                        {service.provider?.verification_status === "verified" && (
+                          <span
+                            className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200"
+                            title="CNIC Verified Provider"
+                          >
+                            <span>✓</span> Verified Pro
+                          </span>
+                        )}
+                      </div>
+
                       <p className="mt-2 text-sm text-slate-600 line-clamp-2 leading-relaxed">
                         {service.description || "Reliable local service available for instant online booking across Quetta."}
                       </p>

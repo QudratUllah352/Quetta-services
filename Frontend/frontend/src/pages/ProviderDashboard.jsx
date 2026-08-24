@@ -8,6 +8,8 @@ import {
 } from "../api/services";
 import { getProviderBookings, updateBookingStatus } from "../api/bookings";
 import { getErrorMessage } from "../api/errors";
+import axios from "../api/axios";
+import { useAuth } from "../context/AuthContext";
 
 const STATUS_STYLES = {
   pending: "bg-amber-50 text-amber-700 border border-amber-200/80",
@@ -55,6 +57,8 @@ const QUETTA_LOCATIONS = [
 ];
 
 export default function ProviderDashboard() {
+  const { user } = useAuth();
+  const [profile, setProfile] = useState(user || null);
   const [services, setServices] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -63,6 +67,13 @@ export default function ProviderDashboard() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [actionLoadingId, setActionLoadingId] = useState(null);
+
+  // Verification Form State
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [cnicNumber, setCnicNumber] = useState("");
+  const [documentUrl, setDocumentUrl] = useState("");
+  const [submittingVerification, setSubmittingVerification] = useState(false);
+  const [verificationSuccess, setVerificationSuccess] = useState("");
 
   const [form, setForm] = useState({
     title: "",
@@ -75,15 +86,17 @@ export default function ProviderDashboard() {
   const load = async () => {
     setLoading(true);
     try {
-      const [svcRes, bookRes, catRes] = await Promise.allSettled([
+      const [svcRes, bookRes, catRes, meRes] = await Promise.allSettled([
         getMyServices(),
         getProviderBookings(),
         getCategories(),
+        axios.get("/auth/me"),
       ]);
 
       if (svcRes.status === "fulfilled") setServices(svcRes.value.data || []);
       if (bookRes.status === "fulfilled") setBookings(bookRes.value.data || []);
       if (catRes.status === "fulfilled") setCategories(catRes.value.data || []);
+      if (meRes.status === "fulfilled") setProfile(meRes.value.data || user);
     } catch {
       setActionError("Could not load your provider dashboard data.");
     } finally {
@@ -170,6 +183,25 @@ export default function ProviderDashboard() {
     }
   };
 
+  const handleVerificationSubmit = async (e) => {
+    e.preventDefault();
+    setActionError("");
+    setSubmittingVerification(true);
+    try {
+      const res = await axios.post("/auth/provider/verify", {
+        cnic_number: cnicNumber,
+        document_url: documentUrl,
+      });
+      setProfile(res.data);
+      setShowVerifyModal(false);
+      setVerificationSuccess("Verification documents submitted successfully! Admin review in progress.");
+    } catch (err) {
+      setActionError(getErrorMessage ? getErrorMessage(err) : "Failed to submit verification.");
+    } finally {
+      setSubmittingVerification(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -188,17 +220,36 @@ export default function ProviderDashboard() {
 
   const activeServicesCount = services.filter((s) => s.status === "active").length;
   const pendingBookingsCount = bookings.filter((b) => b.status === "pending").length;
+  const verificationStatus = (profile?.verification_status || "unsubmitted").toLowerCase();
 
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8 text-slate-900">
       <div className="max-w-6xl mx-auto space-y-8">
+        
         {/* Header Banner */}
         <div className="bg-linear-to-r from-slate-900 via-indigo-950 to-blue-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-slate-900/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
           <div>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold uppercase tracking-wider mb-3 border border-emerald-400/30">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              Verified Provider Portal
-            </span>
+            <div className="flex items-center gap-2 mb-3">
+              {verificationStatus === "verified" ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold uppercase tracking-wider border border-emerald-400/30">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  ✓ Verified Provider
+                </span>
+              ) : verificationStatus === "pending" ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-semibold uppercase tracking-wider border border-amber-400/30">
+                  ⏳ Verification Pending
+                </span>
+              ) : verificationStatus === "rejected" ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 text-xs font-semibold uppercase tracking-wider border border-rose-400/30">
+                  ✕ Verification Rejected
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-500/20 text-slate-300 text-xs font-semibold uppercase tracking-wider border border-slate-400/30">
+                  ⚠️ Unverified Account
+                </span>
+              )}
+            </div>
+
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
               Provider Dashboard
             </h1>
@@ -215,7 +266,60 @@ export default function ProviderDashboard() {
           </button>
         </div>
 
-        {/* Action Error Notification */}
+        {/* Verification Status Alert Bars */}
+        {verificationStatus === "unsubmitted" && (
+          <div className="p-5 rounded-2xl bg-amber-50 border border-amber-200/90 text-amber-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🛡️</span>
+              <div>
+                <h3 className="text-sm font-bold">Get Verified to Earn Customer Trust</h3>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  Submit your 13-digit CNIC and professional credentials to unlock the blue Verified Pro badge on your listings.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowVerifyModal(true)}
+              className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-xs whitespace-nowrap"
+            >
+              Submit Verification
+            </button>
+          </div>
+        )}
+
+        {verificationStatus === "pending" && (
+          <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900 flex items-center gap-3 shadow-xs">
+            <span className="text-xl">⏳</span>
+            <div>
+              <p className="text-xs font-bold">Verification In Review</p>
+              <p className="text-xs text-blue-700 mt-0.5">
+                Your CNIC ({profile?.cnic_number || "submitted"}) is currently being reviewed by the QuettaServices admin team.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {verificationStatus === "rejected" && (
+          <div className="p-5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">⚠️</span>
+              <div>
+                <h3 className="text-sm font-bold">Verification Request Declined</h3>
+                <p className="text-xs text-rose-700 mt-0.5">
+                  Reason: {profile?.rejection_reason || "Documents provided did not meet our verification criteria."}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowVerifyModal(true)}
+              className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs whitespace-nowrap"
+            >
+              Re-submit Documents
+            </button>
+          </div>
+        )}
+
+        {/* Action Error / Success Notifications */}
         {actionError && (
           <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -225,6 +329,18 @@ export default function ProviderDashboard() {
             <button
               onClick={() => setActionError("")}
               className="text-red-500 hover:text-red-700 text-xs font-semibold underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {verificationSuccess && (
+          <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between">
+            <span>{verificationSuccess}</span>
+            <button
+              onClick={() => setVerificationSuccess("")}
+              className="text-emerald-600 hover:text-emerald-800 underline"
             >
               Dismiss
             </button>
@@ -275,6 +391,74 @@ export default function ProviderDashboard() {
             </div>
           </div>
         </div>
+
+        {/* Verification Modal */}
+        {showVerifyModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl p-6 sm:p-8 max-w-lg w-full">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+                <h2 className="text-lg font-bold text-slate-900">
+                  Provider CNIC & Document Verification
+                </h2>
+                <button
+                  onClick={() => setShowVerifyModal(false)}
+                  className="text-slate-400 hover:text-slate-700 font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleVerificationSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
+                    CNIC Number
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 54400-1234567-1"
+                    required
+                    value={cnicNumber}
+                    onChange={(e) => setCnicNumber(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1">Enter your 13-digit Pakistani National ID number.</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
+                    CNIC / Certificate Image URL
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://images.unsplash.com/... or uploaded document link"
+                    required
+                    value={documentUrl}
+                    onChange={(e) => setDocumentUrl(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1">Provide a direct link to an image of your CNIC or trade license.</p>
+                </div>
+
+                <div className="pt-3 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowVerifyModal(false)}
+                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submittingVerification}
+                    className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs disabled:opacity-50"
+                  >
+                    {submittingVerification ? "Submitting..." : "Submit for Review"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* Expandable Service Form */}
         {showForm && (
@@ -528,7 +712,6 @@ export default function ProviderDashboard() {
                     )}
                   </div>
 
-                  {/* Actions according to NEXT_ACTIONS config */}
                   <div className="flex items-center gap-2 w-full md:w-auto justify-end">
                     {(NEXT_ACTIONS[b.status] || []).map((action) => (
                       <button

@@ -6,6 +6,7 @@ import { createBooking } from "../api/bookings";
 import { createReport } from "../api/reports";
 import { useAuth } from "../context/AuthContext";
 import { getErrorMessage } from "../api/errors";
+import axios from "../api/axios";
 
 export default function ServiceDetail() {
   const { id } = useParams();
@@ -16,7 +17,14 @@ export default function ServiceDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [bookingDate, setBookingDate] = useState("");
+  // Slot-Based Availability State
+  const [targetDate, setTargetDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+  const [slotsData, setSlotsData] = useState({ is_available: true, slots: [] });
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+
   const [notes, setNotes] = useState("");
   const [bookingStatus, setBookingStatus] = useState(null); // "success" | "error" | null
   const [bookingError, setBookingError] = useState("");
@@ -38,14 +46,41 @@ export default function ServiceDetail() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  // Fetch available slots when target date or service ID changes
+  useEffect(() => {
+    if (!id || !targetDate) return;
+
+    const fetchSlots = async () => {
+      setSlotsLoading(true);
+      setSelectedSlot(null);
+      try {
+        const res = await axios.get("/availability/slots", {
+          params: { service_id: id, target_date: targetDate },
+        });
+        setSlotsData(res.data || { is_available: false, slots: [] });
+      } catch {
+        setSlotsData({ is_available: false, slots: [] });
+      } finally {
+        setSlotsLoading(false);
+      }
+    };
+
+    fetchSlots();
+  }, [id, targetDate]);
+
   const handleBook = async (e) => {
     e.preventDefault();
+    if (!selectedSlot) {
+      setBookingError("Please choose an available appointment time slot.");
+      return;
+    }
+
     setBookingError("");
     setSubmitting(true);
     try {
       await createBooking({
         service_id: Number(id),
-        booking_date: new Date(bookingDate).toISOString(),
+        booking_date: new Date(selectedSlot).toISOString(),
         notes,
       });
       setBookingStatus("success");
@@ -79,8 +114,17 @@ export default function ServiceDetail() {
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-8">
-      <h1 className="text-3xl font-semibold text-gray-900">{service.title}</h1>
-      <p className="mt-1 text-gray-500">by {service.provider_name}</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-semibold text-gray-900">{service.title}</h1>
+          <p className="mt-1 text-gray-500">by {service.provider_name}</p>
+        </div>
+        {service.provider?.verification_status === "verified" && (
+          <span className="shrink-0 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+            ✓ Verified Pro
+          </span>
+        )}
+      </div>
 
       <div className="mt-4 flex items-center gap-4 text-sm text-gray-600">
         <span className="text-lg font-semibold text-gray-900">
@@ -152,7 +196,7 @@ export default function ServiceDetail() {
         </div>
       )}
 
-      {/* Booking form - customers only */}
+      {/* Booking form with interactive slot picker */}
       {user?.role === "customer" && (
         <div className="mt-8 border-t border-gray-200 pt-6">
           <h2 className="text-lg font-medium text-gray-900">Book this service</h2>
@@ -163,19 +207,64 @@ export default function ServiceDetail() {
               "My Bookings" to track its status.
             </p>
           ) : (
-            <form onSubmit={handleBook} className="mt-3 space-y-3">
+            <form onSubmit={handleBook} className="mt-4 space-y-4">
+              {/* Date Selector */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Date &amp; time
+                  Select Date
                 </label>
                 <input
-                  type="datetime-local"
+                  type="date"
                   required
-                  value={bookingDate}
-                  onChange={(e) => setBookingDate(e.target.value)}
+                  min={new Date().toISOString().split("T")[0]}
+                  value={targetDate}
+                  onChange={(e) => setTargetDate(e.target.value)}
                   className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
                 />
               </div>
+
+              {/* Time Slots Grid */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Available Time Slots
+                </label>
+
+                {slotsLoading ? (
+                  <div className="grid grid-cols-3 gap-2">
+                    {[1, 2, 3].map((n) => (
+                      <div key={n} className="h-9 bg-gray-100 rounded-md animate-pulse" />
+                    ))}
+                  </div>
+                ) : !slotsData.is_available ? (
+                  <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md p-2.5">
+                    Provider is unavailable on this day. Please pick another date.
+                  </p>
+                ) : slotsData.slots.length === 0 ? (
+                  <p className="text-xs text-gray-500">No time slots available for this date.</p>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {slotsData.slots.map((s, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        disabled={s.is_booked}
+                        onClick={() => setSelectedSlot(s.datetime)}
+                        className={`py-2 px-3 rounded-md text-xs font-medium border transition-all text-center ${
+                          s.is_booked
+                            ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through"
+                            : selectedSlot === s.datetime
+                            ? "bg-gray-900 text-white border-gray-900 shadow-xs"
+                            : "bg-white text-gray-700 border-gray-300 hover:border-gray-900"
+                        }`}
+                      >
+                        {s.time_label} {s.is_booked && "(Booked)"}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Notes */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">
                   Notes (optional)
@@ -184,18 +273,25 @@ export default function ServiceDetail() {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={3}
+                  placeholder="Share details about the required service or address specifics..."
                   className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
                 />
               </div>
+
               {bookingError && (
                 <p className="text-sm text-red-600">{bookingError}</p>
               )}
+
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || !selectedSlot}
                 className="rounded-md bg-gray-900 py-2 px-4 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
               >
-                {submitting ? "Booking..." : "Request Booking"}
+                {submitting
+                  ? "Booking..."
+                  : selectedSlot
+                  ? "Request Booking"
+                  : "Select a Time Slot"}
               </button>
             </form>
           )}

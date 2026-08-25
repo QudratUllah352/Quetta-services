@@ -56,6 +56,26 @@ const QUETTA_LOCATIONS = [
   "Satellite Town",
 ];
 
+const DAYS = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
+
+const DEFAULT_SCHEDULE = [
+  { day_of_week: 0, is_active: true, start_time: "09:00", end_time: "17:00", slot_duration_minutes: 60 },
+  { day_of_week: 1, is_active: true, start_time: "09:00", end_time: "17:00", slot_duration_minutes: 60 },
+  { day_of_week: 2, is_active: true, start_time: "09:00", end_time: "17:00", slot_duration_minutes: 60 },
+  { day_of_week: 3, is_active: true, start_time: "09:00", end_time: "17:00", slot_duration_minutes: 60 },
+  { day_of_week: 4, is_active: true, start_time: "09:00", end_time: "17:00", slot_duration_minutes: 60 },
+  { day_of_week: 5, is_active: true, start_time: "09:00", end_time: "17:00", slot_duration_minutes: 60 },
+  { day_of_week: 6, is_active: false, start_time: "09:00", end_time: "17:00", slot_duration_minutes: 60 },
+];
+
 export default function ProviderDashboard() {
   const { user } = useAuth();
   const [profile, setProfile] = useState(user || null);
@@ -75,6 +95,10 @@ export default function ProviderDashboard() {
   const [submittingVerification, setSubmittingVerification] = useState(false);
   const [verificationSuccess, setVerificationSuccess] = useState("");
 
+  // Availability Schedule State
+  const [schedule, setSchedule] = useState(DEFAULT_SCHEDULE);
+  const [savingSchedule, setSavingSchedule] = useState(false);
+
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -86,17 +110,27 @@ export default function ProviderDashboard() {
   const load = async () => {
     setLoading(true);
     try {
-      const [svcRes, bookRes, catRes, meRes] = await Promise.allSettled([
+      const [svcRes, bookRes, catRes, meRes, schedRes] = await Promise.allSettled([
         getMyServices(),
         getProviderBookings(),
         getCategories(),
         axios.get("/auth/me"),
+        axios.get("/availability/my-schedule"),
       ]);
 
       if (svcRes.status === "fulfilled") setServices(svcRes.value.data || []);
       if (bookRes.status === "fulfilled") setBookings(bookRes.value.data || []);
       if (catRes.status === "fulfilled") setCategories(catRes.value.data || []);
       if (meRes.status === "fulfilled") setProfile(meRes.value.data || user);
+
+      if (schedRes.status === "fulfilled" && schedRes.value.data?.length > 0) {
+        const fetched = schedRes.value.data;
+        const merged = DEFAULT_SCHEDULE.map((def) => {
+          const match = fetched.find((f) => f.day_of_week === def.day_of_week);
+          return match || def;
+        });
+        setSchedule(merged);
+      }
     } catch {
       setActionError("Could not load your provider dashboard data.");
     } finally {
@@ -202,6 +236,20 @@ export default function ProviderDashboard() {
     }
   };
 
+  const saveSchedule = async () => {
+    setActionError("");
+    setSavingSchedule(true);
+    try {
+      await axios.post("/availability/my-schedule", { schedules: schedule });
+      setVerificationSuccess("Working hours schedule saved successfully!");
+      setTimeout(() => setVerificationSuccess(""), 4000);
+    } catch (err) {
+      setActionError(getErrorMessage ? getErrorMessage(err) : "Failed to save schedule.");
+    } finally {
+      setSavingSchedule(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -254,7 +302,7 @@ export default function ProviderDashboard() {
               Provider Dashboard
             </h1>
             <p className="text-sm text-slate-300 mt-1 max-w-xl">
-              Manage your local services, accept client appointments, and oversee bookings across Quetta.
+              Manage your local services, set availability, accept client appointments, and oversee bookings across Quetta.
             </p>
           </div>
 
@@ -459,6 +507,78 @@ export default function ProviderDashboard() {
             </div>
           </div>
         )}
+
+        {/* Availability Schedule Section */}
+        <section className="bg-white rounded-3xl border border-slate-200/80 shadow-xs p-6 sm:p-8">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b border-slate-100">
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">Working Days & Availability</h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Configure your working hours so customers in Quetta can book specific open slots.
+              </p>
+            </div>
+            <button
+              onClick={saveSchedule}
+              disabled={savingSchedule}
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all disabled:opacity-50"
+            >
+              {savingSchedule ? "Saving..." : "Save Working Hours"}
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {schedule.map((item, idx) => (
+              <div
+                key={idx}
+                className="flex flex-wrap items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-200/70 gap-3"
+              >
+                <div className="flex items-center gap-3 w-36">
+                  <input
+                    type="checkbox"
+                    checked={item.is_active}
+                    onChange={(e) => {
+                      const next = [...schedule];
+                      next[idx].is_active = e.target.checked;
+                      setSchedule(next);
+                    }}
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                  <span className={`text-xs font-bold ${item.is_active ? "text-slate-900" : "text-slate-400"}`}>
+                    {DAYS[item.day_of_week]}
+                  </span>
+                </div>
+
+                {item.is_active ? (
+                  <div className="flex items-center gap-2 text-xs">
+                    <input
+                      type="time"
+                      value={item.start_time}
+                      onChange={(e) => {
+                        const next = [...schedule];
+                        next[idx].start_time = e.target.value;
+                        setSchedule(next);
+                      }}
+                      className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                    <span className="text-slate-400 font-semibold">to</span>
+                    <input
+                      type="time"
+                      value={item.end_time}
+                      onChange={(e) => {
+                        const next = [...schedule];
+                        next[idx].end_time = e.target.value;
+                        setSchedule(next);
+                      }}
+                      className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                ) : (
+                  <span className="text-xs font-semibold text-rose-500">Unavailable (Day Off)</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
 
         {/* Expandable Service Form */}
         {showForm && (

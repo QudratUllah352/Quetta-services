@@ -8,6 +8,7 @@ import {
   getCategories,
 } from "../api/services";
 import { getProviderBookings, updateBookingStatus } from "../api/bookings";
+import { updateProviderProfile } from "../api/auth";
 import { getErrorMessage } from "../api/errors";
 import axios from "../api/axios";
 import { useAuth } from "../context/AuthContext";
@@ -76,6 +77,181 @@ const DEFAULT_SCHEDULE = [
   { day_of_week: 5, is_active: true, start_time: "09:00", end_time: "17:00", slot_duration_minutes: 60 },
   { day_of_week: 6, is_active: false, start_time: "09:00", end_time: "17:00", slot_duration_minutes: 60 },
 ];
+
+export function ProviderProfileEditor({ profile, onProfileUpdated }) {
+  const [formData, setFormData] = useState({
+    bio: profile?.bio || "",
+    phone_whatsapp: profile?.phone_whatsapp || "",
+    years_experience: profile?.years_experience || 1,
+    location_area: profile?.location_area || "Quetta",
+    response_time_str: profile?.response_time_str || "Usually responds within 30 minutes",
+    profile_picture: profile?.profile_picture || "",
+  });
+
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        bio: profile.bio || "",
+        phone_whatsapp: profile.phone_whatsapp || "",
+        years_experience: profile.years_experience || 1,
+        location_area: profile.location_area || "Quetta",
+        response_time_str: profile.response_time_str || "Usually responds within 30 minutes",
+        profile_picture: profile.profile_picture || "",
+      });
+    }
+  }, [profile]);
+
+  const [saving, setSaving] = useState(false);
+  const [statusMsg, setStatusMsg] = useState({ type: "", text: "" });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setStatusMsg({ type: "", text: "" });
+    try {
+      const res = await updateProviderProfile({
+        ...formData,
+        years_experience: Number(formData.years_experience),
+      });
+      setStatusMsg({ type: "success", text: "Profile details saved successfully!" });
+      if (onProfileUpdated) onProfileUpdated(res.data);
+    } catch (err) {
+      setStatusMsg({
+        type: "error",
+        text: err.response?.data?.detail || "Failed to update profile.",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-lg font-bold text-slate-900">Edit Business Storefront Profile</h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Manually customize how your business card and public page appear to customers.
+          </p>
+        </div>
+      </div>
+
+      {statusMsg.text && (
+        <div
+          className={`mb-5 p-3.5 rounded-2xl text-xs font-semibold ${
+            statusMsg.type === "success"
+              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+              : "bg-rose-50 text-rose-800 border border-rose-200"
+          }`}
+        >
+          {statusMsg.text}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              Profile Photo URL
+            </label>
+            <input
+              type="url"
+              name="profile_picture"
+              placeholder="https://images.unsplash.com/..."
+              value={formData.profile_picture}
+              onChange={handleChange}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              WhatsApp / Contact Number
+            </label>
+            <input
+              type="text"
+              name="phone_whatsapp"
+              placeholder="+923001234567"
+              value={formData.phone_whatsapp}
+              onChange={handleChange}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              Location / Area in Quetta
+            </label>
+            <input
+              type="text"
+              name="location_area"
+              placeholder="e.g. Jinnah Road, Quetta"
+              value={formData.location_area}
+              onChange={handleChange}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              Years of Experience
+            </label>
+            <input
+              type="number"
+              min="0"
+              max="50"
+              name="years_experience"
+              value={formData.years_experience}
+              onChange={handleChange}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            Response Time Badge
+          </label>
+          <input
+            type="text"
+            name="response_time_str"
+            placeholder="e.g. Usually responds within 15 minutes"
+            value={formData.response_time_str}
+            onChange={handleChange}
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            About / Business Bio
+          </label>
+          <textarea
+            name="bio"
+            rows="3"
+            placeholder="Describe your expertise, certifications, and service terms..."
+            value={formData.bio}
+            onChange={handleChange}
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={saving}
+          className="px-6 py-2.5 bg-slate-900 text-white font-bold text-xs rounded-xl hover:bg-slate-800 disabled:opacity-50 transition-all"
+        >
+          {saving ? "Saving Changes..." : "Save Profile Details"}
+        </button>
+      </form>
+    </div>
+  );
+}
 
 export default function ProviderDashboard() {
   const { user } = useAuth();
@@ -520,6 +696,12 @@ export default function ProviderDashboard() {
             </div>
           </div>
         )}
+
+        {/* Storefront Profile Customization Section */}
+        <ProviderProfileEditor
+          profile={profile}
+          onProfileUpdated={(updatedUser) => setProfile(updatedUser)}
+        />
 
         {/* Availability Schedule Section */}
         <section className="bg-white rounded-3xl border border-slate-200/80 shadow-xs p-6 sm:p-8">

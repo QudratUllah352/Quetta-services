@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { getService } from "../api/services";
 import { getServiceReviews } from "../api/reviews";
 import { createBooking } from "../api/bookings";
@@ -43,7 +43,7 @@ export default function ServiceDetail() {
   useEffect(() => {
     setLoading(true);
     const promises = [getService(id), getServiceReviews(id)];
-    
+
     if (user?.role === "customer") {
       promises.push(getMyFavoriteIds());
     }
@@ -151,7 +151,15 @@ export default function ServiceDetail() {
               </span>
             )}
           </div>
-          <p className="mt-1 text-gray-500">by {service.provider_name}</p>
+          <p className="mt-1 text-gray-500">
+            by{" "}
+            <Link
+              to={`/providers/${service.provider_id}`}
+              className="text-blue-600 font-bold hover:underline"
+            >
+              {service.provider_name} ↗
+            </Link>
+          </p>
         </div>
 
         {user?.role === "customer" && (

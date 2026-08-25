@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   getMyServices,
   createService,
@@ -280,7 +281,7 @@ export default function ProviderDashboard() {
             <div className="flex items-center gap-2 mb-3">
               {verificationStatus === "verified" ? (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold uppercase tracking-wider border border-emerald-400/30">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                   ✓ Verified Provider
                 </span>
               ) : verificationStatus === "pending" ? (
@@ -306,12 +307,24 @@ export default function ProviderDashboard() {
             </p>
           </div>
 
-          <button
-            onClick={() => (showForm ? resetForm() : setShowForm(true))}
-            className="px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold shadow-lg shadow-blue-600/30 transition-all duration-150 flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
-          >
-            <span>{showForm ? "✕ Close Form" : "＋ New Service Listing"}</span>
-          </button>
+          <div className="flex items-center gap-3 flex-wrap">
+            {profile?.id && (
+              <Link
+                to={`/providers/${profile.id}`}
+                target="_blank"
+                rel="noreferrer"
+                className="px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-sm font-bold border border-white/20 transition-all flex items-center gap-2"
+              >
+                <span>👁️ View Public Profile</span>
+              </Link>
+            )}
+            <button
+              onClick={() => (showForm ? resetForm() : setShowForm(true))}
+              className="px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold shadow-lg shadow-blue-600/30 transition-all duration-150 flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <span>{showForm ? "✕ Close Form" : "＋ New Service Listing"}</span>
+            </button>
+          </div>
         </div>
 
         {/* Verification Status Alert Bars */}

@@ -9,6 +9,7 @@ import Register from "./pages/Register";
 import ServiceDetail from "./pages/ServiceDetail";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import ProviderDashboard from "./pages/ProviderDashboard";
+import ProviderProfile from "./pages/ProviderProfile";
 import AdminDashboard from "./pages/AdminDashboard";
 import Favorites from "./pages/Favorites";
 
@@ -18,7 +19,7 @@ export default function App() {
       <AuthProvider>
         <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
           <Navbar />
-          
+
           <main className="grow">
             <Routes>
               {/* Public Routes */}
@@ -26,6 +27,7 @@ export default function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/services/:id" element={<ServiceDetail />} />
+              <Route path="/providers/:id" element={<ProviderProfile />} />
 
               {/* Customer Routes (Accessible by Customers & Admins) */}
               <Route

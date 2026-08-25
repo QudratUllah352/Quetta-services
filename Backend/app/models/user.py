@@ -30,6 +30,14 @@ class User(Base):
     role = Column(Enum(UserRole), default=UserRole.customer, nullable=False)
     is_active = Column(Boolean, default=True)
 
+    # Provider & Profile Details
+    profile_picture = Column(String(500), nullable=True)
+    bio = Column(Text, nullable=True)
+    phone_whatsapp = Column(String(30), nullable=True)
+    years_experience = Column(Integer, default=1)
+    response_time_str = Column(String(60), default="Usually responds within 30 minutes")
+    location_area = Column(String(100), default="Quetta")
+
     # Provider Verification Columns
     verification_status = Column(
         Enum(VerificationStatus),

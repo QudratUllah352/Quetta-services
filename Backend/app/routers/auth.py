@@ -1,13 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from sqlalchemy import select
 from pydantic import BaseModel, Field
+from sqlalchemy import and_, func, select
+from sqlalchemy.orm import Session
 
-from app.database import get_db
-from app.models.user import User, UserRole, VerificationStatus
-from app.schemas.user import UserCreate, UserRead, UserLogin, Token
-from app.auth.security import hash_password, verify_password, create_access_token
 from app.auth.dependencies import get_current_user
+from app.auth.security import create_access_token, hash_password, verify_password
+from app.database import get_db
+from app.models.availability import ProviderSchedule
+from app.models.booking import Booking, BookingStatus
+from app.models.review import Review
+from app.models.service import Service, ServiceStatus
+from app.models.user import User, UserRole, VerificationStatus
+from app.schemas.provider import ProviderPublicProfile
+from app.schemas.user import Token, UserCreate, UserLogin, UserRead
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -82,9 +87,11 @@ def login(payload: UserLogin, db: Session = Depends(get_db)):
         data={
             "sub": str(user.id),
             "role": user.role.value,
-            "verification_status": user.verification_status.value
-            if hasattr(user.verification_status, "value")
-            else str(user.verification_status),
+            "verification_status": (
+                user.verification_status.value
+                if hasattr(user.verification_status, "value")
+                else str(user.verification_status)
+            ),
         }
     )
     return Token(access_token=access_token)
@@ -118,3 +125,112 @@ def submit_provider_verification(
     db.commit()
     db.refresh(current_user)
     return current_user
+
+
+@router.get("/provider-profile/{provider_id}", response_model=ProviderPublicProfile)
+def get_public_provider_profile(provider_id: int, db: Session = Depends(get_db)):
+    provider = db.get(User, provider_id)
+    if not provider or provider.role != UserRole.provider:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Provider profile not found.",
+        )
+
+    # 1. Fetch active services
+    services = (
+        db.execute(
+            select(Service).where(
+                and_(
+                    Service.provider_id == provider_id,
+                    Service.status == ServiceStatus.active,
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    # 2. Count completed jobs
+    completed_jobs = (
+        db.execute(
+            select(func.count(Booking.id))
+            .join(Service, Booking.service_id == Service.id)
+            .where(
+                and_(
+                    Service.provider_id == provider_id,
+                    Booking.status == BookingStatus.completed,
+                )
+            )
+        ).scalar()
+        or 0
+    )
+
+    # 3. Fetch reviews & compute rating
+    reviews = (
+        db.execute(
+            select(Review)
+            .join(Service, Review.service_id == Service.id)
+            .where(Service.provider_id == provider_id)
+            .order_by(Review.created_at.desc())
+        )
+        .scalars()
+        .all()
+    )
+
+    avg_rating = 5.0
+    if reviews:
+        avg_rating = round(sum(r.rating for r in reviews) / len(reviews), 1)
+
+    # 4. Fetch working schedule
+    schedules = (
+        db.execute(
+            select(ProviderSchedule).where(ProviderSchedule.provider_id == provider_id)
+        )
+        .scalars()
+        .all()
+    )
+
+    working_hours = [
+        {
+            "day_of_week": s.day_of_week,
+            "is_active": s.is_active,
+            "start_time": (
+                s.start_time.strftime("%H:%M")
+                if hasattr(s.start_time, "strftime")
+                else str(s.start_time)
+            ),
+            "end_time": (
+                s.end_time.strftime("%H:%M")
+                if hasattr(s.end_time, "strftime")
+                else str(s.end_time)
+            ),
+        }
+        for s in schedules
+    ]
+
+    return {
+        "id": provider.id,
+        "name": provider.name,
+        "profile_picture": provider.profile_picture,
+        "verification_status": (
+            provider.verification_status.value
+            if hasattr(provider.verification_status, "value")
+            else str(provider.verification_status)
+        ),
+        "bio": (
+            provider.bio
+            or "Certified professional offering quality maintenance and on-demand local services in Quetta."
+        ),
+        "location_area": provider.location_area or "Quetta",
+        "phone_whatsapp": provider.phone_whatsapp,
+        "years_experience": provider.years_experience or 2,
+        "response_time_str": (
+            provider.response_time_str or "Usually responds within 30 minutes"
+        ),
+        "average_rating": avg_rating,
+        "total_reviews": len(reviews),
+        "completed_jobs_count": completed_jobs,
+        "services": services,
+        "reviews": reviews,
+        "working_hours": working_hours,
+    }

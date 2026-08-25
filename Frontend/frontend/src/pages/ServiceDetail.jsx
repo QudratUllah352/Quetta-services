@@ -4,6 +4,7 @@ import { getService } from "../api/services";
 import { getServiceReviews } from "../api/reviews";
 import { createBooking } from "../api/bookings";
 import { createReport } from "../api/reports";
+import { toggleFavorite, getMyFavoriteIds } from "../api/favorites";
 import { useAuth } from "../context/AuthContext";
 import { getErrorMessage } from "../api/errors";
 import axios from "../api/axios";
@@ -16,6 +17,10 @@ export default function ServiceDetail() {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Favorite State
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favLoading, setFavLoading] = useState(false);
 
   // Slot-Based Availability State
   const [targetDate, setTargetDate] = useState(
@@ -37,14 +42,23 @@ export default function ServiceDetail() {
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([getService(id), getServiceReviews(id)])
-      .then(([svcRes, reviewsRes]) => {
+    const promises = [getService(id), getServiceReviews(id)];
+    
+    if (user?.role === "customer") {
+      promises.push(getMyFavoriteIds());
+    }
+
+    Promise.all(promises)
+      .then(([svcRes, reviewsRes, favRes]) => {
         setService(svcRes.data);
         setReviews(reviewsRes.data);
+        if (favRes && Array.isArray(favRes.data)) {
+          setIsFavorite(favRes.data.includes(Number(id)));
+        }
       })
       .catch(() => setError("Could not load this service."))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, user]);
 
   // Fetch available slots when target date or service ID changes
   useEffect(() => {
@@ -67,6 +81,19 @@ export default function ServiceDetail() {
 
     fetchSlots();
   }, [id, targetDate]);
+
+  const handleToggleFavorite = async () => {
+    if (!user) return;
+    setFavLoading(true);
+    try {
+      const res = await toggleFavorite(id);
+      setIsFavorite(res.data.is_favorite);
+    } catch (err) {
+      console.error("Failed to toggle favorite:", err);
+    } finally {
+      setFavLoading(false);
+    }
+  };
 
   const handleBook = async (e) => {
     e.preventDefault();
@@ -116,13 +143,30 @@ export default function ServiceDetail() {
     <div className="max-w-3xl mx-auto px-6 py-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold text-gray-900">{service.title}</h1>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-3xl font-semibold text-gray-900">{service.title}</h1>
+            {service.provider?.verification_status === "verified" && (
+              <span className="shrink-0 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                ✓ Verified Pro
+              </span>
+            )}
+          </div>
           <p className="mt-1 text-gray-500">by {service.provider_name}</p>
         </div>
-        {service.provider?.verification_status === "verified" && (
-          <span className="shrink-0 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-            ✓ Verified Pro
-          </span>
+
+        {user?.role === "customer" && (
+          <button
+            onClick={handleToggleFavorite}
+            disabled={favLoading}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all ${
+              isFavorite
+                ? "bg-rose-50 text-rose-600 border-rose-200 shadow-2xs"
+                : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+            } disabled:opacity-50`}
+          >
+            <span>{isFavorite ? "❤️" : "🤍"}</span>
+            <span>{isFavorite ? "Saved" : "Save"}</span>
+          </button>
         )}
       </div>
 

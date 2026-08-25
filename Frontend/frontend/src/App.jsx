@@ -10,6 +10,7 @@ import ServiceDetail from "./pages/ServiceDetail";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import ProviderDashboard from "./pages/ProviderDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import Favorites from "./pages/Favorites";
 
 export default function App() {
   return (
@@ -40,6 +41,14 @@ export default function App() {
                 element={
                   <ProtectedRoute roles={["customer", "admin"]}>
                     <CustomerDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/favorites"
+                element={
+                  <ProtectedRoute roles={["customer", "admin"]}>
+                    <Favorites />
                   </ProtectedRoute>
                 }
               />

@@ -77,6 +77,22 @@ export default function Navbar() {
               </NavLink>
             )}
 
+            {/* Customer Saved Favorites */}
+            {isCustomer && (
+              <NavLink
+                to="/favorites"
+                className={({ isActive }) =>
+                  `relative px-5 py-2 rounded-full text-xs font-bold transition-all duration-300 ${
+                    isActive
+                      ? "bg-white text-rose-600 shadow-md scale-100"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                  }`
+                }
+              >
+                Saved ❤️
+              </NavLink>
+            )}
+
             {/* Provider Portal Link */}
             {isProvider && (
               <NavLink
@@ -214,13 +230,22 @@ export default function Navbar() {
           </Link>
 
           {isCustomer && (
-            <Link
-              to="/dashboard"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-4 py-2.5 rounded-xl text-sm font-bold text-blue-600 hover:bg-blue-50 transition-colors"
-            >
-              Customer Dashboard
-            </Link>
+            <>
+              <Link
+                to="/dashboard"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-4 py-2.5 rounded-xl text-sm font-bold text-blue-600 hover:bg-blue-50 transition-colors"
+              >
+                Customer Dashboard
+              </Link>
+              <Link
+                to="/favorites"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-4 py-2.5 rounded-xl text-sm font-bold text-rose-600 hover:bg-rose-50 transition-colors"
+              >
+                Saved Services ❤️
+              </Link>
+            </>
           )}
 
           {isProvider && (

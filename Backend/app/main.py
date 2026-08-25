@@ -2,7 +2,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import settings
-from app.routers import auth, services, bookings, reviews, admin, reports
+from app.routers import (
+    auth,
+    services,
+    bookings,
+    reviews,
+    admin,
+    reports,
+    availability,
+)
 
 app = FastAPI(title="Quetta Services API")
 
@@ -26,12 +34,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Register all application routers
 app.include_router(auth.router)
 app.include_router(services.router)
 app.include_router(bookings.router)
 app.include_router(reviews.router)
 app.include_router(admin.router)
 app.include_router(reports.router)
+app.include_router(availability.router)
 
 
 @app.get("/")

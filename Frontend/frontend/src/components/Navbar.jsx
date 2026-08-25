@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import NotificationBell from "./NotificationBell";
 
 export default function Navbar() {
   const { user, token, logout } = useAuth();
@@ -18,7 +19,7 @@ export default function Navbar() {
   const isAdmin = token && userRole === "admin";
 
   return (
-    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/70 shadow-sm transition-all duration-300">
+    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/70 shadow-xs transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           
@@ -115,11 +116,14 @@ export default function Navbar() {
           {/* Right Action & User Profile Section */}
           <div className="hidden md:flex items-center gap-3">
             {token ? (
-              <div className="flex items-center gap-3 bg-slate-50 border border-slate-200/80 p-1.5 pr-3 rounded-2xl shadow-xs">
+              <div className="flex items-center gap-3 bg-slate-50 border border-slate-200/80 p-1.5 pr-3 rounded-2xl shadow-2xs">
+                {/* Real-time Notification Bell Dropdown */}
+                <NotificationBell />
+
                 {/* Profile Pill */}
                 <div className="flex items-center gap-2.5">
                   <div
-                    className={`w-9 h-9 rounded-xl text-white text-xs font-black flex items-center justify-center uppercase shadow-sm transition-transform duration-200 hover:scale-105 ${
+                    className={`w-9 h-9 rounded-xl text-white text-xs font-black flex items-center justify-center uppercase shadow-2xs transition-transform duration-200 hover:scale-105 ${
                       isProvider
                         ? "bg-linear-to-tr from-emerald-600 to-teal-500"
                         : isAdmin
@@ -179,8 +183,9 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile Hamburger Button */}
-          <div className="flex md:hidden">
+          {/* Mobile Right Bar: Notification Bell + Hamburger */}
+          <div className="flex items-center gap-2 md:hidden">
+            {token && <NotificationBell />}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"

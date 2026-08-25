@@ -10,6 +10,7 @@ from app.routers import (
     admin,
     reports,
     availability,
+    notifications,
 )
 
 app = FastAPI(title="Quetta Services API")
@@ -42,6 +43,7 @@ app.include_router(reviews.router)
 app.include_router(admin.router)
 app.include_router(reports.router)
 app.include_router(availability.router)
+app.include_router(notifications.router)
 
 
 @app.get("/")

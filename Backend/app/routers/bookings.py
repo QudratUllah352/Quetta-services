@@ -8,6 +8,7 @@ from app.models.service import Service, ServiceStatus
 from app.models.booking import Booking, BookingStatus
 from app.schemas.booking import BookingCreate, BookingStatusUpdate, BookingRead
 from app.auth.dependencies import get_current_user, require_customer
+from app.utils.notifications import create_in_app_notification
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 
@@ -48,6 +49,20 @@ def create_booking(
         status=BookingStatus.pending,
     )
     db.add(booking)
+
+    # Notify the service provider about the incoming booking request
+    booking_time_str = (
+        booking.booking_date.strftime("%b %d, %I:%M %p")
+        if hasattr(booking.booking_date, "strftime")
+        else str(booking.booking_date)
+    )
+    create_in_app_notification(
+        db=db,
+        user_id=service.provider_id,
+        title="New Booking Request 📅",
+        message=f"You received a new booking for '{service.title}' on {booking_time_str}.",
+    )
+
     db.commit()
     db.refresh(booking)
     return booking
@@ -120,6 +135,25 @@ def update_booking_status(
         )
 
     booking.status = payload.status
+
+    # Notify customer when status is confirmed, cancelled, or completed
+    service_title = booking.service.title if booking.service else "Service"
+    status_key = payload.status.value if hasattr(payload.status, "value") else str(payload.status)
+
+    status_messages = {
+        "confirmed": f"🔔 Your booking for '{service_title}' has been confirmed.",
+        "cancelled": f"❌ Your booking for '{service_title}' was cancelled.",
+        "completed": f"🎉 Your booking for '{service_title}' is marked completed. Leave a review!",
+    }
+
+    if status_key in status_messages:
+        create_in_app_notification(
+            db=db,
+            user_id=booking.customer_id,
+            title=f"Booking {status_key.capitalize()}",
+            message=status_messages[status_key],
+        )
+
     db.commit()
     db.refresh(booking)
     return booking

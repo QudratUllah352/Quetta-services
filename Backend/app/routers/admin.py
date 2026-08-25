@@ -16,6 +16,7 @@ from app.schemas.service import ServiceRead, CategoryCreate, CategoryRead
 from app.schemas.booking import BookingRead
 from app.schemas.report import ReportRead
 from app.auth.dependencies import require_admin
+from app.utils.notifications import create_in_app_notification
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -81,6 +82,22 @@ def review_provider_verification(
         user.rejection_reason = decision.rejection_reason or "Document verification criteria not met."
     else:
         user.rejection_reason = None
+
+    # Dispatch notification to provider
+    if decision.status == VerificationStatus.verified:
+        create_in_app_notification(
+            db=db,
+            user_id=user.id,
+            title="Verification Approved! 🛡️",
+            message="Congratulations! Your CNIC verification is approved. Your profile now features the Verified Pro badge.",
+        )
+    else:
+        create_in_app_notification(
+            db=db,
+            user_id=user.id,
+            title="Verification Rejected ⚠️",
+            message=f"Your verification request was rejected: {user.rejection_reason}",
+        )
 
     db.commit()
     db.refresh(user)

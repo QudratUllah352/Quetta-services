@@ -11,7 +11,7 @@ from app.models.booking import Booking, BookingStatus
 from app.models.review import Review
 from app.models.service import Service, ServiceStatus
 from app.models.user import User, UserRole, VerificationStatus
-from app.schemas.provider import ProviderPublicProfile
+from app.schemas.provider import ProviderProfileUpdate, ProviderPublicProfile
 from app.schemas.user import Token, UserCreate, UserLogin, UserRead
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -121,6 +121,37 @@ def submit_provider_verification(
     current_user.document_url = payload.document_url
     current_user.verification_status = VerificationStatus.pending
     current_user.rejection_reason = None
+
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
+@router.patch("/provider/profile/me", response_model=UserRead)
+def update_my_provider_profile(
+    payload: ProviderProfileUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Allows logged-in providers to manually update their public storefront profile."""
+    if current_user.role != UserRole.provider:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only providers can edit their business profile.",
+        )
+
+    if payload.bio is not None:
+        current_user.bio = payload.bio
+    if payload.phone_whatsapp is not None:
+        current_user.phone_whatsapp = payload.phone_whatsapp
+    if payload.years_experience is not None:
+        current_user.years_experience = payload.years_experience
+    if payload.location_area is not None:
+        current_user.location_area = payload.location_area
+    if payload.response_time_str is not None:
+        current_user.response_time_str = payload.response_time_str
+    if payload.profile_picture is not None:
+        current_user.profile_picture = payload.profile_picture
 
     db.commit()
     db.refresh(current_user)

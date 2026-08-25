@@ -1,16 +1,25 @@
-from typing import Optional
 from decimal import Decimal
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func
 
-from app.database import get_db
-from app.models.user import User
-from app.models.service import Service, ServiceStatus, Category
-from app.models.review import Review
-from app.schemas.service import ServiceCreate, ServiceUpdate, ServiceRead, ServiceReadWithDetails, CategoryRead
 from app.auth.dependencies import get_current_user, require_provider
+from app.database import get_db
+from app.models.availability import ProviderSchedule
+from app.models.booking import Booking, BookingStatus
+from app.models.review import Review
+from app.models.service import Category, Service, ServiceStatus
+from app.models.user import User, UserRole
+from app.schemas.provider import ProviderPublicProfile
+from app.schemas.service import (
+    CategoryRead,
+    ServiceCreate,
+    ServiceRead,
+    ServiceReadWithDetails,
+    ServiceUpdate,
+)
 
 router = APIRouter(prefix="/services", tags=["services"])
 
@@ -18,6 +27,134 @@ router = APIRouter(prefix="/services", tags=["services"])
 @router.get("/categories", response_model=list[CategoryRead])
 def list_categories(db: Session = Depends(get_db)):
     return db.execute(select(Category).order_by(Category.name)).scalars().all()
+
+
+@router.get("/provider-profile/{provider_id}", response_model=ProviderPublicProfile)
+def get_public_provider_profile(provider_id: int, db: Session = Depends(get_db)):
+    provider = db.get(User, provider_id)
+    if not provider:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with ID {provider_id} does not exist.",
+        )
+
+    # Check if role matches
+    role_val = (
+        provider.role.value
+        if hasattr(provider.role, "value")
+        else str(provider.role)
+    )
+    if role_val != "provider":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User {provider_id} is a {role_val}, not a service provider.",
+        )
+
+    # 1. Fetch active services
+    services = (
+        db.execute(
+            select(Service).where(
+                and_(
+                    Service.provider_id == provider_id,
+                    Service.status == ServiceStatus.active,
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    # 2. Count completed jobs
+    completed_jobs = (
+        db.execute(
+            select(func.count(Booking.id))
+            .join(Service, Booking.service_id == Service.id)
+            .where(
+                and_(
+                    Service.provider_id == provider_id,
+                    Booking.status == BookingStatus.completed,
+                )
+            )
+        ).scalar()
+        or 0
+    )
+
+    # 3. Fetch reviews & compute rating
+    reviews = (
+        db.execute(
+            select(Review)
+            .join(Service, Review.service_id == Service.id)
+            .where(Service.provider_id == provider_id)
+            .order_by(Review.created_at.desc())
+        )
+        .scalars()
+        .all()
+    )
+
+    avg_rating = 5.0
+    if reviews:
+        avg_rating = round(sum(r.rating for r in reviews) / len(reviews), 1)
+
+    # 4. Fetch working schedule
+    schedules = (
+        db.execute(
+            select(ProviderSchedule).where(ProviderSchedule.provider_id == provider_id)
+        )
+        .scalars()
+        .all()
+    )
+
+    working_hours = [
+        {
+            "day_of_week": s.day_of_week,
+            "is_active": s.is_active,
+            "start_time": (
+                s.start_time.strftime("%H:%M")
+                if hasattr(s.start_time, "strftime")
+                else str(s.start_time)
+            ),
+            "end_time": (
+                s.end_time.strftime("%H:%M")
+                if hasattr(s.end_time, "strftime")
+                else str(s.end_time)
+            ),
+        }
+        for s in schedules
+    ]
+
+    verif_val = (
+        provider.verification_status.value
+        if hasattr(provider.verification_status, "value")
+        else str(provider.verification_status)
+    )
+
+    return {
+        "id": provider.id,
+        "name": provider.name,
+        "profile_picture": getattr(provider, "profile_picture", None),
+        "verification_status": verif_val,
+        "bio": (
+            getattr(provider, "bio", None)
+            or "Certified professional offering quality maintenance and on-demand local services in Quetta."
+        ),
+        "location_area": getattr(provider, "location_area", None) or "Quetta",
+        "phone_whatsapp": getattr(provider, "phone_whatsapp", None),
+        "years_experience": getattr(provider, "years_experience", 1) or 1,
+        "response_time_str": (
+            getattr(
+                provider,
+                "response_time_str",
+                "Usually responds within 30 minutes",
+            )
+            or "Usually responds within 30 minutes"
+        ),
+        "average_rating": avg_rating,
+        "total_reviews": len(reviews),
+        "completed_jobs_count": completed_jobs,
+        "services": services,
+        "reviews": reviews,
+        "working_hours": working_hours,
+    }
 
 
 @router.get("", response_model=list[ServiceReadWithDetails])
@@ -32,8 +169,6 @@ def list_services(
     page_size: int = Query(default=20, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
-    # Average rating + review count per service, computed from the reviews
-    # table rather than trusting any client-supplied value (Section 20).
     rating_subq = (
         select(
             Review.service_id,
@@ -87,27 +222,37 @@ def list_my_services(
 ):
     """Provider's own listings, including inactive ones - unlike the public
     GET /services, which only shows active listings to shoppers."""
-    return db.execute(
-        select(Service)
-        .where(Service.provider_id == current_user.id)
-        .order_by(Service.created_at.desc())
-    ).scalars().all()
+    return (
+        db.execute(
+            select(Service)
+            .where(Service.provider_id == current_user.id)
+            .order_by(Service.created_at.desc())
+        )
+        .scalars()
+        .all()
+    )
 
 
 @router.get("/{service_id}", response_model=ServiceReadWithDetails)
 def get_service(service_id: int, db: Session = Depends(get_db)):
     service = db.get(Service, service_id)
     if not service:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Service not found."
+        )
 
     rating_row = db.execute(
-        select(func.avg(Review.rating), func.count(Review.id)).where(Review.service_id == service_id)
+        select(func.avg(Review.rating), func.count(Review.id)).where(
+            Review.service_id == service_id
+        )
     ).first()
     avg_rating, review_count = rating_row
 
     item = ServiceReadWithDetails.model_validate(service)
     item.provider_name = service.provider.name
-    item.average_rating = round(float(avg_rating), 2) if avg_rating is not None else None
+    item.average_rating = (
+        round(float(avg_rating), 2) if avg_rating is not None else None
+    )
     item.review_count = review_count or 0
     return item
 
@@ -120,10 +265,13 @@ def create_service(
 ):
     category = db.get(Category, payload.category_id)
     if not category:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Category does not exist.")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Category does not exist.",
+        )
 
     service = Service(
-        provider_id=current_user.id,  # taken from the token, never trust a client-supplied provider_id
+        provider_id=current_user.id,
         category_id=payload.category_id,
         title=payload.title,
         description=payload.description,
@@ -145,7 +293,9 @@ def update_service(
 ):
     service = db.get(Service, service_id)
     if not service:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Service not found."
+        )
 
     if service.provider_id != current_user.id:
         raise HTTPException(
@@ -170,7 +320,9 @@ def deactivate_service(
 ):
     service = db.get(Service, service_id)
     if not service:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Service not found."
+        )
 
     if service.provider_id != current_user.id:
         raise HTTPException(
